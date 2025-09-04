@@ -1,0 +1,37 @@
+# Simplified Development Environment for ORB_SLAM2_SSD_Semantic
+# This is a minimal Docker image that can be built without network dependencies
+# The full setup will be done via installation scripts
+
+FROM ubuntu:20.04
+
+# Avoid interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Shanghai
+
+# Create basic development structure
+RUN mkdir -p /workspace
+WORKDIR /workspace
+
+# Set up basic environment
+ENV LANG=C.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=C.UTF-8
+
+# Create development user (will be configured during runtime)
+RUN groupadd -r developer && useradd -r -g developer developer
+RUN mkdir -p /home/developer && chown developer:developer /home/developer
+
+# Copy requirements and setup files
+COPY requirements.txt /tmp/requirements.txt
+COPY apt-packages.txt /tmp/apt-packages.txt
+COPY ros-packages.txt /tmp/ros-packages.txt
+
+# Create installation script inside container
+COPY scripts/container-setup.sh /usr/local/bin/container-setup.sh
+RUN chmod +x /usr/local/bin/container-setup.sh
+
+# Expose common ports for development
+EXPOSE 11311 8080 3000 8888
+
+# Default command runs setup if not already configured
+CMD ["/bin/bash", "-c", "if [ ! -f /.container-configured ]; then /usr/local/bin/container-setup.sh; fi && /bin/bash"]

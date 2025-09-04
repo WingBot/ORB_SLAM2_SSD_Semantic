@@ -1,0 +1,70 @@
+# Docker ignore file for ORB_SLAM2_SSD_Semantic development
+
+# Version control
+.git
+.gitignore
+
+# Build artifacts
+build/
+lib/
+bin/
+*.o
+*.so
+*.a
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.pytest_cache/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# Documentation build
+docs/_build/
+
+# Node modules (if any)
+node_modules/
+
+# System files
+.Trash-*
+Thumbs.db
+
+# Large data files that shouldn't be in image
+*.bag
+*.ot
+*.bin
+*.png
+*.jpg
+*.jpeg
+*.avi
+*.mp4
+
+# Log files
+*.log
+
+# Backup files
+*.bak
+*.backup
