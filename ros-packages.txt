@@ -1,0 +1,55 @@
+# ROS package dependencies for ORB_SLAM2_SSD_Semantic
+
+# Core ROS packages
+ros-noetic-desktop-full
+ros-noetic-image-transport
+ros-noetic-cv-bridge
+ros-noetic-tf2
+ros-noetic-tf2-ros
+ros-noetic-tf2-geometry-msgs
+
+# Sensor data handling
+ros-noetic-sensor-msgs
+ros-noetic-geometry-msgs
+ros-noetic-std-msgs
+ros-noetic-nav-msgs
+ros-noetic-visualization-msgs
+
+# Point cloud processing
+ros-noetic-pcl-ros
+ros-noetic-pcl-conversions
+ros-noetic-pcl-msgs
+
+# Image processing
+ros-noetic-image-proc
+ros-noetic-image-pipeline
+ros-noetic-compressed-image-transport
+
+# Camera drivers (commonly used)
+ros-noetic-usb-cam
+ros-noetic-camera-info-manager
+ros-noetic-image-view
+
+# SLAM related packages
+ros-noetic-tf2-sensor-msgs
+ros-noetic-eigen-conversions
+ros-noetic-tf-conversions
+
+# Visualization
+ros-noetic-rviz
+ros-noetic-rqt
+ros-noetic-rqt-common-plugins
+ros-noetic-rqt-graph
+ros-noetic-rqt-image-view
+
+# Build tools
+python3-catkin-tools
+python3-rosdep
+python3-rosinstall
+python3-rosinstall-generator
+python3-wstool
+
+# Additional useful packages
+ros-noetic-rosbag
+ros-noetic-topic-tools
+ros-noetic-message-filters
