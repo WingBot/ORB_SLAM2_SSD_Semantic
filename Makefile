@@ -17,9 +17,17 @@ build: ## Build Docker development image
 	@echo "Building development Docker image..."
 	docker build -f Dockerfile.dev -t orb-slam2-ssd-semantic:dev .
 
+build-minimal: ## Build minimal Docker image (quick setup)
+	@echo "Building minimal Docker image..."
+	docker build -f Dockerfile.minimal -t orb-slam2-ssd-semantic:minimal .
+
 build-no-cache: ## Build Docker image without cache
 	@echo "Building development Docker image (no cache)..."
 	docker build --no-cache -f Dockerfile.dev -t orb-slam2-ssd-semantic:dev .
+
+build-minimal-no-cache: ## Build minimal Docker image without cache
+	@echo "Building minimal Docker image (no cache)..."
+	docker build --no-cache -f Dockerfile.minimal -t orb-slam2-ssd-semantic:minimal .
 
 run: ## Run development container
 	@echo "Starting development container..."
@@ -51,11 +59,26 @@ build-orb: ## Build ORB-SLAM2 project inside container
 
 test-env: ## Test development environment
 	@echo "Testing development environment..."
-	docker run --rm orb-slam2-ssd-semantic:dev bash -c "\
-		python3 --version && \
-		echo 'Python OK' && \
-		which ros && echo 'ROS OK' || echo 'ROS not found' && \
-		pkg-config --modversion opencv4 && echo 'OpenCV OK' || echo 'OpenCV not found'"
+	@if docker image ls | grep -q "orb-slam2-ssd-semantic:minimal"; then \
+		echo "Testing minimal image..."; \
+		docker run --rm orb-slam2-ssd-semantic:minimal bash -c "\
+			echo 'Container test successful' && \
+			ls -la /usr/local/bin/container-setup.sh && \
+			echo 'Setup script found'"; \
+	elif docker image ls | grep -q "orb-slam2-ssd-semantic:dev"; then \
+		echo "Testing development image..."; \
+		docker run --rm orb-slam2-ssd-semantic:dev bash -c "\
+			python3 --version && \
+			echo 'Python OK' && \
+			which ros && echo 'ROS OK' || echo 'ROS not found' && \
+			pkg-config --modversion opencv4 && echo 'OpenCV OK' || echo 'OpenCV not found'"; \
+	else \
+		echo "No Docker images found. Run 'make build-minimal' first."; \
+	fi
+
+test-quick: ## Quick test with minimal image
+	@echo "Quick testing minimal image..."
+	docker run --rm orb-slam2-ssd-semantic:minimal echo "Minimal container works!"
 
 clean: ## Clean up containers and images
 	@echo "Cleaning up Docker containers and images..."
