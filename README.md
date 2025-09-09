@@ -1,5 +1,49 @@
 ![](https://github.com/Ewenwan/ORB_SLAM2_SSD_Semantic/blob/master/global.png)
 
+# ORB_SLAM2_SSD_Semantic
+
+一个基于ORB_SLAM2的语义SLAM系统，集成了目标检测、动态环境处理和语义地图构建功能。
+
+## 🚀 快速开始（Docker环境 - 推荐）
+
+### 一键启动
+```bash
+# 启动交互式管理界面
+./start.sh
+
+# 选择 "4) 一键构建所有镜像"
+# 等待构建完成后选择 "5) 启动开发环境"
+```
+
+### 手动构建
+```bash
+# 1. 构建Docker环境
+./docker/scripts/build-all.sh
+
+# 2. 启动开发容器
+./docker/scripts/run-dev.sh
+
+# 3. 在容器内构建项目
+./docker/scripts/build_project.sh
+
+# 4. 运行测试
+./docker/scripts/run_tests.sh
+```
+
+## 📦 Docker环境特性
+
+- **分层构建**: 系统镜像 → 依赖镜像 → 开发镜像
+- **一键部署**: 自动安装所有依赖（Eigen3, OpenCV, Pangolin, PCL, OctoMap等）
+- **GUI支持**: 完整的X11转发，支持Pangolin可视化
+- **开发友好**: 代码实时同步，支持增量编译
+- **生产就绪**: 包含完整的CI/CD配置
+
+详细文档请参考：[DOCKER_README.md](DOCKER_README.md)
+
+## 🏗️ 传统安装方式
+
+如果您不使用Docker，可以按照以下方式手动安装依赖：
+
 # 修改 
     1.0
      添加一个点云建图线程，接收来自 Tracking线程的关键帧。

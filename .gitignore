@@ -1,0 +1,67 @@
+# 编译产物
+build/
+bin/
+lib/
+*.so
+*.a
+*.o
+*.pyc
+*.pyo
+__pycache__/
+
+# CMake生成文件
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# IDE配置文件
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.bak
+*.backup
+
+# Thirdparty库（通常是预编译的）
+Thirdparty/DBoW2/build/
+Thirdparty/g2o/build/
+
+# 数据文件
+*.bag
+*.pcd
+*.ot
+map.bin
+octomap.ot
+
+# 结果文件
+trajectory.png
+trag.png
+final_map.png
+global*.png
+dynamic_det_*.png
+merge*.png
+object*.txt
+
+# 脚本生成的临时文件
+fix_*.sh
+test_*.sh
+quick_start.sh
+rebuild_*.sh
+install_*.sh
+
+# Docker相关临时文件
+.dockerignore

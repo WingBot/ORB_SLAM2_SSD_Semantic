@@ -1,0 +1,164 @@
+# ORB_SLAM2_SSD_Semantic 依赖库镜像
+# 基于系统镜像构建，包含所有编译好的第三方库
+
+FROM orb_slam2_ssd_semantic:system
+
+USER root
+WORKDIR /opt
+
+# 安装Eigen3
+RUN echo "=== 安装 Eigen3 ===" && \
+    git clone https://gitlab.com/libeigen/eigen.git && \
+    cd eigen && \
+    git checkout 3.4.0 && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -j$(nproc) install && \
+    cd /opt && rm -rf eigen && \
+    echo "Eigen3 安装完成"
+
+# 安装OpenCV (简化版本，避免编译耗时)
+RUN echo "=== 安装 OpenCV ===" && \
+    apt-get update && apt-get install -y \
+        libopencv-dev \
+        libopencv-contrib-dev \
+        python3-opencv && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo "OpenCV 安装完成"
+
+# 安装Pangolin
+RUN echo "=== 安装 Pangolin ===" && \
+    git clone https://github.com/stevenlovegrove/Pangolin.git && \
+    cd Pangolin && \
+    git checkout v0.6 && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -j$(nproc) install && \
+    cd /opt && rm -rf Pangolin && \
+    echo "Pangolin 安装完成"
+
+# 安装PCL
+RUN echo "=== 安装 PCL ===" && \
+    apt-get update && apt-get install -y \
+        libpcl-dev \
+        pcl-tools && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo "PCL 安装完成"
+
+# 安装OctoMap
+RUN echo "=== 安装 OctoMap ===" && \
+    git clone https://github.com/OctoMap/octomap.git && \
+    cd octomap && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -j$(nproc) install && \
+    cd /opt && rm -rf octomap && \
+    echo "OctoMap 安装完成"
+
+# 安装NCNN
+RUN echo "=== 安装 NCNN ===" && \
+    git clone https://github.com/Tencent/ncnn.git && \
+    cd ncnn && \
+    git checkout 20230517 && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local \
+             -DNCNN_VULKAN=OFF \
+             -DNCNN_BUILD_EXAMPLES=OFF \
+             -DNCNN_BUILD_TOOLS=OFF && \
+    make -j$(nproc) install && \
+    cd /opt && rm -rf ncnn && \
+    echo "NCNN 安装完成"
+
+# 安装DBoW2
+RUN echo "=== 安装 DBoW2 ===" && \
+    git clone https://github.com/dorian3d/DBoW2.git && \
+    cd DBoW2 && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -j$(nproc) install && \
+    cd /opt && rm -rf DBoW2 && \
+    echo "DBoW2 安装完成"
+
+# 安装Ceres依赖
+RUN echo "=== 安装 Ceres 依赖 ===" && \
+    apt-get update && apt-get install -y \
+        libgoogle-glog-dev \
+        libgflags-dev \
+        libatlas-base-dev \
+        libeigen3-dev \
+        libsuitesparse-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo "Ceres 依赖安装完成"
+
+# 安装Ceres Solver
+RUN echo "=== 安装 Ceres Solver ===" && \
+    git clone https://github.com/ceres-solver/ceres-solver.git && \
+    cd ceres-solver && \
+    git checkout 2.1.0 && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local \
+             -DBUILD_EXAMPLES=OFF \
+             -DBUILD_TESTING=OFF \
+             -DUSE_CUDA=OFF \
+             -DUSE_OPENMP=ON \
+             -DMINIGLOG=ON && \
+    make -j$(nproc) install && \
+    cd /opt && rm -rf ceres-solver && \
+    echo "Ceres Solver 安装完成"
+
+# 安装g2o
+RUN echo "=== 安装 g2o ===" && \
+    git clone https://github.com/RainerKuemmerle/g2o.git && \
+    cd g2o && \
+    git checkout 20230223_git && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local \
+             -DG2O_BUILD_APPS=OFF \
+             -DG2O_BUILD_EXAMPLES=OFF && \
+    make -j$(nproc) install && \
+    cd /opt && rm -rf g2o && \
+    echo "g2o 安装完成"
+
+# 更新动态链接库缓存
+RUN ldconfig
+
+# 创建依赖验证脚本
+RUN cat > /usr/local/bin/verify-deps.sh << 'EOF'
+#!/bin/bash
+echo "=== 验证依赖库安装 ==="
+echo "检查 Eigen3..."
+test -d /usr/local/include/eigen3 && echo "✓ Eigen3" || echo "✗ Eigen3"
+echo "检查 OpenCV..."
+pkg-config --exists opencv4 && echo "✓ OpenCV4" || pkg-config --exists opencv && echo "✓ OpenCV" || echo "✗ OpenCV"
+echo "检查 Pangolin..."
+test -f /usr/local/lib/libpangolin.so && echo "✓ Pangolin" || echo "✗ Pangolin"
+echo "检查 PCL..."
+pkg-config --exists pcl_common-1.10 && echo "✓ PCL" || echo "✗ PCL"
+echo "检查 OctoMap..."
+test -f /usr/local/lib/liboctomap.so && echo "✓ OctoMap" || echo "✗ OctoMap"
+echo "检查 NCNN..."
+test -f /usr/local/lib/libncnn.a && echo "✓ NCNN" || echo "✗ NCNN"
+echo "检查 DBoW2..."
+test -f /usr/local/lib/libDBoW2.so && echo "✓ DBoW2" || test -f /usr/local/lib/libDBoW2.a && echo "✓ DBoW2" || echo "✗ DBoW2"
+echo "检查 g2o..."
+find /usr/local/lib -name "libg2o_*.so" | head -1 | xargs test -f && echo "✓ g2o" || echo "✗ g2o"
+echo "检查 Ceres Solver..."
+test -f /usr/local/lib/libceres.so && echo "✓ Ceres Solver" || echo "✗ Ceres Solver"
+echo "=== 依赖验证完成 ==="
+EOF
+
+RUN chmod +x /usr/local/bin/verify-deps.sh
+
+# 设置环境变量
+ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+ENV CMAKE_PREFIX_PATH=/usr/local
+
+USER slam
+WORKDIR /home/slam
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD /usr/local/bin/verify-deps.sh > /dev/null || exit 1
+
+CMD ["/bin/bash"]

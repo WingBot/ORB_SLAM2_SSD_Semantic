@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # 开发环境服务
+  orb-slam-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.final
+    image: orb_slam2_ssd_semantic:dev
+    container_name: orb_slam2_dev
+    volumes:
+      - ..:/home/slam/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /dev:/dev:ro
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    network_mode: host
+    privileged: true
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    
+  # 构建和测试服务
+  orb-slam-build:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.final
+    image: orb_slam2_ssd_semantic:build
+    container_name: orb_slam2_build
+    volumes:
+      - ..:/home/slam/workspace
+      - build_cache:/home/slam/workspace/build
+      - lib_cache:/home/slam/workspace/lib
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+    command: ["./scripts/build_project.sh"]
+    
+  # 可视化服务（可选）
+  orb-slam-viewer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.final
+    image: orb_slam2_ssd_semantic:viewer
+    container_name: orb_slam2_viewer
+    volumes:
+      - ..:/home/slam/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    depends_on:
+      - orb-slam-build
+
+volumes:
+  build_cache:
+    driver: local
+  lib_cache:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  orb-slam-analysis:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.final
+    image: orb_slam2_ssd_semantic:latest
+    container_name: orb_slam2_production
+    volumes:
+      - ./data:/home/slam/workspace/data:ro
+      - ./results:/home/slam/workspace/results
+      - ./config:/home/slam/workspace/config:ro
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - OMP_NUM_THREADS=4
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "test", "-f", "/home/slam/workspace/lib/libORB_SLAM2_pc.so"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: ["./Examples/RGB-D/ty_rgbd", "Vocabulary/ORBvoc.txt", "config/my_rgbd_ty_api_adj.yaml", "data/"]
+
+  # 可选的Jupyter服务用于数据分析
+  orb-slam-notebook:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.final
+    image: orb_slam2_ssd_semantic:notebook
+    container_name: orb_slam2_notebook
+    volumes:
+      - ./notebooks:/home/slam/workspace/notebooks
+      - ./results:/home/slam/workspace/results:ro
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''"]
+    depends_on:
+      - orb-slam-analysis
+
+volumes:
+  data:
+    driver: local
+  results:
+    driver: local
+  config:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

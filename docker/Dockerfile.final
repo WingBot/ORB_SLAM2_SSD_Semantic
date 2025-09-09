@@ -1,0 +1,64 @@
+# ORB_SLAM2_SSD_Semantic 最终开发镜像
+# 基于依赖镜像构建，包含项目代码
+
+FROM orb_slam2_ssd_semantic:deps
+
+USER root
+
+# 安装额外的运行时依赖
+RUN apt-get update && apt-get install -y \
+    libqt5opengl5-dev \
+    qt5-default \
+    libfreeimage3 \
+    libfreeimage-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 切换到用户目录
+USER slam
+WORKDIR /home/slam
+
+# 创建项目目录
+RUN mkdir -p /home/slam/workspace
+
+# 设置工作目录
+WORKDIR /home/slam/workspace
+
+# 复制项目源码（构建时复制）
+COPY --chown=slam:slam . .
+
+# 复制构建脚本并设置权限
+COPY --chown=slam:slam docker/scripts/ ./scripts/
+RUN chmod +x ./scripts/*.sh
+
+# 创建Thirdparty目录结构并链接库
+RUN mkdir -p Thirdparty/DBoW2/lib Thirdparty/g2o/lib && \
+    # 链接DBoW2
+    if [ -f "/usr/local/lib/libDBoW2.so" ]; then \
+        ln -sf /usr/local/lib/libDBoW2.so Thirdparty/DBoW2/lib/libDBoW2.so; \
+    elif [ -f "/usr/local/lib/libDBoW2.a" ]; then \
+        ln -sf /usr/local/lib/libDBoW2.a Thirdparty/DBoW2/lib/libDBoW2.so; \
+    fi && \
+    # 链接g2o库
+    for lib in $(find /usr/local/lib -name "libg2o_*.so" 2>/dev/null | head -10); do \
+        if [ -f "$lib" ]; then \
+            ln -sf "$lib" "Thirdparty/g2o/lib/$(basename $lib)"; \
+        fi \
+    done && \
+    # 创建主要的g2o.so链接
+    if [ -f "/usr/local/lib/libg2o_core.so" ]; then \
+        ln -sf /usr/local/lib/libg2o_core.so Thirdparty/g2o/lib/libg2o.so; \
+    fi
+
+# 设置环境变量
+ENV LD_LIBRARY_PATH=/usr/local/lib:/home/slam/workspace/lib:$LD_LIBRARY_PATH
+ENV CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH
+
+# 暴露可能需要的端口
+EXPOSE 8080 9090
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD test -f lib/libORB_SLAM2_pc.so || exit 1
+
+# 默认启动命令
+CMD ["/bin/bash"]
