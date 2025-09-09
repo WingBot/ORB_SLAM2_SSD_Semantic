@@ -15,7 +15,7 @@
 #include "Frame.h"
 #include "ORBVocabulary.h"
 
-#include<mutex>
+#include <mutex>
 
 
 namespace ORB_SLAM2
@@ -49,7 +49,7 @@ protected:
   const ORBVocabulary* mpVoc;
 
   // Inverted file
-  std::vector<list<KeyFrame*> > mvInvertedFile;
+  std::vector<std::list<KeyFrame*> > mvInvertedFile;
 
   // Mutex
   std::mutex mMutex;

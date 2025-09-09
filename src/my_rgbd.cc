@@ -15,7 +15,7 @@
 #include<System.h>
 
 
-#include "./ty/common/common.hpp" // 图漾的头文件
+#include "../realtime_dect_loc/include/ty/common/common.hpp" // 图漾的头文件
 
 using namespace std;
 

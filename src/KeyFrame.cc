@@ -76,7 +76,7 @@ namespace ORB_SLAM2
 	if(mBowVec.empty() || mFeatVec.empty())
 	{
 	  // mat 类型描述子 转换成 容器 mat类型
-	    vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
+	    std::vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
 	    // Feature vector associate features with nodes in the 4th level (from leaves up)
 	    // We assume the vocabulary tree has 6 levels, change the 4 otherwise
 	    mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);// 计算 描述子向量 用词典线性表示的向量
@@ -96,7 +96,7 @@ namespace ORB_SLAM2
      */
     void KeyFrame::SetPose(const cv::Mat &Tcw_)
     {
-	unique_lock<mutex> lock(mMutexPose);
+	std::unique_lock<std::mutex> lock(mMutexPose);
 	Tcw_.copyTo(Tcw);// 拷贝到 类内变量  
 	cv::Mat Rcw = Tcw.rowRange(0,3).colRange(0,3);// 世界 到 相机  旋转矩阵
 	cv::Mat tcw = Tcw.rowRange(0,3).col(3);   // 世界 到 相机 平移向量
@@ -118,40 +118,40 @@ namespace ORB_SLAM2
     // // 世界 到 相机  位姿
     cv::Mat KeyFrame::GetPose()
     {
-	unique_lock<mutex> lock(mMutexPose);
+	std::unique_lock<std::mutex> lock(mMutexPose);
 	return Tcw.clone();
     }
     // 相机 到 世界  
     cv::Mat KeyFrame::GetPoseInverse()
     {
-	unique_lock<mutex> lock(mMutexPose);
+	std::unique_lock<std::mutex> lock(mMutexPose);
 	return Twc.clone();
     }
 
     // 单个相机 光心 点坐标
     cv::Mat KeyFrame::GetCameraCenter()
     {
-	unique_lock<mutex> lock(mMutexPose);
+	std::unique_lock<std::mutex> lock(mMutexPose);
 	return Ow.clone();
     }
 
     // 双目相机 基线中心点  坐标
     cv::Mat KeyFrame::GetStereoCenter()
     {
-	unique_lock<mutex> lock(mMutexPose);
+	std::unique_lock<std::mutex> lock(mMutexPose);
 	return Cw.clone();
     }
 
     // 旋转向量
     cv::Mat KeyFrame::GetRotation()
     {
-	unique_lock<mutex> lock(mMutexPose);
+	std::unique_lock<std::mutex> lock(mMutexPose);
 	return Tcw.rowRange(0,3).colRange(0,3).clone();
     }
     // 平移向量
     cv::Mat KeyFrame::GetTranslation()
     {
-	unique_lock<mutex> lock(mMutexPose);
+	std::unique_lock<std::mutex> lock(mMutexPose);
 	return Tcw.rowRange(0,3).col(3).clone();
     }
 
@@ -159,7 +159,7 @@ namespace ORB_SLAM2
     void KeyFrame::AddConnection(KeyFrame *pKF, const int &weight)
     {
 	{
-	    unique_lock<mutex> lock(mMutexConnections);
+	    std::unique_lock<std::mutex> lock(mMutexConnections);
 	    if(!mConnectedKeyFrameWeights.count(pKF))// 关键帧权重
 		mConnectedKeyFrameWeights[pKF]=weight;
 	    else if(mConnectedKeyFrameWeights[pKF]!=weight)
@@ -179,35 +179,35 @@ namespace ORB_SLAM2
     // 排序后 更新 mvpOrderedConnectedKeyFrames  mvOrderedWeights
     void KeyFrame::UpdateBestCovisibles()
     {
-	unique_lock<mutex> lock(mMutexConnections);
-	vector<pair<int,KeyFrame*> > vPairs;
+	std::unique_lock<std::mutex> lock(mMutexConnections);
+	std::vector<std::pair<int,KeyFrame*> > vPairs;
 	// pair是将2个数据组合成一个数据，当需要这样的需求时就可以使用pair，如stl中的map就是将key和value放在一起来保存。
 	vPairs.reserve(mConnectedKeyFrameWeights.size());
 	
-	// mit的类型为 map<KeyFrame*,int>::iterator   auto 可以根据右式子自动推断
+	// mit的类型为 std::map<KeyFrame*,int>::iterator   auto 可以根据右式子自动推断
 	for(auto mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
-	  vPairs.push_back(make_pair(mit->second,mit->first));// 权重   关键帧  对
+	  vPairs.push_back(std::make_pair(mit->second,mit->first));// 权重   关键帧  对
 
-	sort(vPairs.begin(),vPairs.end());// 对关键帧 的 权重 进行 排序 
-	list<KeyFrame*> lKFs;// 链表结构 的表 存储关键帧
-	list<int> lWs;// 存储 对于权重 共视点数量
+	std::sort(vPairs.begin(),vPairs.end());// 对关键帧 的 权重 进行 排序 
+	std::list<KeyFrame*> lKFs;// 链表结构 的表 存储关键帧
+	std::list<int> lWs;// 存储 对于权重 共视点数量
 	for(size_t i=0, iend=vPairs.size(); i<iend;i++)
 	{
 	    lKFs.push_front(vPairs[i].second);//关键帧
 	    lWs.push_front(vPairs[i].first);// 权重
 	}
 	
-	mvpOrderedConnectedKeyFrames = vector<KeyFrame*>(lKFs.begin(),lKFs.end());//有序 关键帧 
-	mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());    // 有序权重
+	mvpOrderedConnectedKeyFrames = std::vector<KeyFrame*>(lKFs.begin(),lKFs.end());//有序 关键帧 
+	mvOrderedWeights = std::vector<int>(lWs.begin(), lWs.end());    // 有序权重
     }
 
     //  返回所有连接的关键帧  得到关键帧序列  
     // set是关联容器 未排序(set)
-    set<KeyFrame*> KeyFrame::GetConnectedKeyFrames()
+    std::set<KeyFrame*> KeyFrame::GetConnectedKeyFrames()
     {
-	unique_lock<mutex> lock(mMutexConnections);
-	set<KeyFrame*> s;
-      // mit的类型为 map<KeyFrame*,int>::iterator   auto 可以根据右式子自动推断
+	std::unique_lock<std::mutex> lock(mMutexConnections);
+	std::set<KeyFrame*> s;
+      // mit的类型为 std::map<KeyFrame*,int>::iterator   auto 可以根据右式子自动推断
 	for(auto mit=mConnectedKeyFrameWeights.begin(); mit!=mConnectedKeyFrameWeights.end(); mit++)
 	    s.insert(mit->first);// 插入关键帧
 	return s;
@@ -215,45 +215,45 @@ namespace ORB_SLAM2
 
     // 返回所有连接的关键帧  返回全部序列 关键帧 容器
     //  vector是顺序容器  排序(vector)
-    vector<KeyFrame*> KeyFrame::GetVectorCovisibleKeyFrames()
+    std::vector<KeyFrame*> KeyFrame::GetVectorCovisibleKeyFrames()
     {
-	unique_lock<mutex> lock(mMutexConnections);
+	std::unique_lock<std::mutex> lock(mMutexConnections);
 	return mvpOrderedConnectedKeyFrames;
     }
 
     // 返回前N个最优 关键帧
-    vector<KeyFrame*> KeyFrame::GetBestCovisibilityKeyFrames(const int &N)
+    std::vector<KeyFrame*> KeyFrame::GetBestCovisibilityKeyFrames(const int &N)
     {
-	unique_lock<mutex> lock(mMutexConnections);
+	std::unique_lock<std::mutex> lock(mMutexConnections);
 	if((int)mvpOrderedConnectedKeyFrames.size()<N)
 	    return mvpOrderedConnectedKeyFrames;
 	else
-	    return vector<KeyFrame*>(mvpOrderedConnectedKeyFrames.begin(),mvpOrderedConnectedKeyFrames.begin()+N);
+	    return std::vector<KeyFrame*>(mvpOrderedConnectedKeyFrames.begin(),mvpOrderedConnectedKeyFrames.begin()+N);
     }
 
     // 根据权重w  二分查找 有序序列 中的某个对象
     // 返回权重大于 w的关键帧
-    vector<KeyFrame*> KeyFrame::GetCovisiblesByWeight(const int &w)
+    std::vector<KeyFrame*> KeyFrame::GetCovisiblesByWeight(const int &w)
     {
-	unique_lock<mutex> lock(mMutexConnections);
+	std::unique_lock<std::mutex> lock(mMutexConnections);
 
 	if(mvpOrderedConnectedKeyFrames.empty())
-	    return vector<KeyFrame*>();
+	    return std::vector<KeyFrame*>();
       // 二分查找   返回 权重 w对于的元素  第一个数起始 2：尾数 3：查找的值  4：比较函数
-	vector<int>::iterator it = upper_bound(mvOrderedWeights.begin(),mvOrderedWeights.end(),w,KeyFrame::weightComp);
+	std::vector<int>::iterator it = upper_bound(mvOrderedWeights.begin(),mvOrderedWeights.end(),w,KeyFrame::weightComp);
 	if(it==mvOrderedWeights.end())// 找到最后了 还没找到
-	    return vector<KeyFrame*>();
+	    return std::vector<KeyFrame*>();
 	else// 找到了
 	{
 	    int n = it-mvOrderedWeights.begin();//  减去迭代器开始   得到差值
-	    return vector<KeyFrame*>(mvpOrderedConnectedKeyFrames.begin(), mvpOrderedConnectedKeyFrames.begin()+n);
+	    return std::vector<KeyFrame*>(mvpOrderedConnectedKeyFrames.begin(), mvpOrderedConnectedKeyFrames.begin()+n);
 	}
     }
 
     // 返回关键帧对于的权重
     int KeyFrame::GetWeight(KeyFrame *pKF)
     {
-	unique_lock<mutex> lock(mMutexConnections);
+	std::unique_lock<std::mutex> lock(mMutexConnections);
 	if(mConnectedKeyFrameWeights.count(pKF))
 	    return mConnectedKeyFrameWeights[pKF];
 	else
@@ -264,14 +264,14 @@ namespace ORB_SLAM2
     // 当前帧对应的地图点的指针均存放在mvpMapPoints（mvp代表：member、vector、pointer）向量中
     void KeyFrame::AddMapPoint(MapPoint *pMP, const size_t &idx)
     {
-	unique_lock<mutex> lock(mMutexFeatures);
+	std::unique_lock<std::mutex> lock(mMutexFeatures);
 	mvpMapPoints[idx]=pMP;
     }
 
     // 按id删除地图点 
     void KeyFrame::EraseMapPointMatch(const size_t &idx)
     {
-	unique_lock<mutex> lock(mMutexFeatures);
+	std::unique_lock<std::mutex> lock(mMutexFeatures);
 	mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
     }
     // 按点 删除地图点 
@@ -289,10 +289,10 @@ namespace ORB_SLAM2
     }
 
     // 得到所有地图点  未排序(set)
-    set<MapPoint*> KeyFrame::GetMapPoints()
+    std::set<MapPoint*> KeyFrame::GetMapPoints()
     {
-	unique_lock<mutex> lock(mMutexFeatures);
-	set<MapPoint*> s;// set 集合
+	std::unique_lock<std::mutex> lock(mMutexFeatures);
+	std::set<MapPoint*> s;// set 集合
 	for(size_t i=0, iend=mvpMapPoints.size(); i<iend; i++)
 	{
 	    if(!mvpMapPoints[i])
@@ -309,7 +309,7 @@ namespace ORB_SLAM2
     // 其中会判断MapPoint的Observations()属性，对比给出的阈值
     int KeyFrame::TrackedMapPoints(const int &minObs)
     {
-	unique_lock<mutex> lock(mMutexFeatures);
+	std::unique_lock<std::mutex> lock(mMutexFeatures);
 
 	int nPoints=0;
 	const bool bCheckObs = minObs>0;
@@ -334,33 +334,33 @@ namespace ORB_SLAM2
     }
     
     // 得到所有地图点  排序(vector)
-    vector<MapPoint*> KeyFrame::GetMapPointMatches()
+    std::vector<MapPoint*> KeyFrame::GetMapPointMatches()
     {
-	unique_lock<mutex> lock(mMutexFeatures);
+	std::unique_lock<std::mutex> lock(mMutexFeatures);
 	return mvpMapPoints;
     }
 
     MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
     {
-	unique_lock<mutex> lock(mMutexFeatures);
+	std::unique_lock<std::mutex> lock(mMutexFeatures);
 	return mvpMapPoints[idx];
     }
 
    // 建立关键帧之间的连接关系
     void KeyFrame::UpdateConnections()
     {
-	map<KeyFrame*,int> KFcounter;// 帧 观测到 地图点的次数
+	std::map<KeyFrame*,int> KFcounter;// 帧 观测到 地图点的次数
 
-	vector<MapPoint*> vpMP;//所有地图点
+	std::vector<MapPoint*> vpMP;//所有地图点
 
 	{
-	    unique_lock<mutex> lockMPs(mMutexFeatures);
+	    std::unique_lock<std::mutex> lockMPs(mMutexFeatures);
 	    vpMP = mvpMapPoints;
 	}
 
 	//For all map points in keyframe check in which other keyframes are they seen
 	//Increase counter for those keyframes
-	// vector<MapPoint*>::iterator vit 
+	// std::vector<MapPoint*>::iterator vit 
 	for(auto vit = vpMP.begin(), vend=vpMP.end(); vit!=vend; vit++)// 每一个 关键点
 	{
 	    MapPoint* pMP = *vit;// *vit 迭代器里的内容 为 地图点指针 MapPoint*
@@ -371,9 +371,9 @@ namespace ORB_SLAM2
 	    if(pMP->isBad())// 指针 解应用 + 访问 成员函数  ->
 		continue;
 	    
-	    //  map<KeyFrame*,size_t> observations observations 
+	    //  std::map<KeyFrame*,size_t> observations observations 
 	  auto  observations = pMP->GetObservations();// 关键点 所在的 关键帧
-	  // map<KeyFrame*,size_t>::iterator mit 
+	  // std::map<KeyFrame*,size_t>::iterator mit 
     // 地图点的 观测帧
 	    for(auto  mit = observations.begin(), mend=observations.end(); mit!=mend; mit++)
 	    {
@@ -393,9 +393,9 @@ namespace ORB_SLAM2
 	KeyFrame* pKFmax=NULL;
 	int th = 15;// 被观测次数 阈值
 
-	vector<pair<int,KeyFrame*> > vPairs;// 容器 键值对  保留大于观测次阈值的 关键帧 和其观测次数
+	std::vector<std::pair<int,KeyFrame*> > vPairs;// 容器 键值对  保留大于观测次阈值的 关键帧 和其观测次数
 	vPairs.reserve(KFcounter.size());
-	// map<KeyFrame*,int>::iterator mit
+	// std::map<KeyFrame*,int>::iterator mit
 	for(auto  mit = KFcounter.begin(), mend=KFcounter.end(); mit!=mend; mit++)
 	{
 	    if(mit->second > nmax)
@@ -405,20 +405,20 @@ namespace ORB_SLAM2
 	    }
 	    if(mit->second >= th)// 大于阈值
 	    {
-		vPairs.push_back(make_pair(mit->second , mit->first));//保留大于观测次阈值的 关键帧 和其观测次数 
+		vPairs.push_back(std::make_pair(mit->second , mit->first));//保留大于观测次阈值的 关键帧 和其观测次数 
 		(mit->first)->AddConnection(this, mit->second);// 
 	    }
 	}
 
 	if(vPairs.empty())
 	{
-	    vPairs.push_back(make_pair(nmax,pKFmax));
+	    vPairs.push_back(std::make_pair(nmax,pKFmax));
 	    pKFmax->AddConnection(this,nmax);
 	}
 
-        sort(vPairs.begin(),vPairs.end());// 超过 15次 观测到地图点 的 帧 再排序
-	list<KeyFrame*> lKFs;// 关键帧
-	list<int> lWs;// 被观测次数
+        std::sort(vPairs.begin(),vPairs.end());// 超过 15次 观测到地图点 的 帧 再排序
+	std::list<KeyFrame*> lKFs;// 关键帧
+	std::list<int> lWs;// 被观测次数
 	for(size_t i=0; i<vPairs.size();i++)
 	{
 	    lKFs.push_front(vPairs[i].second);// 有序
@@ -426,12 +426,12 @@ namespace ORB_SLAM2
 	}
 
 	{
-	    unique_lock<mutex> lockCon(mMutexConnections);
+	    std::unique_lock<std::mutex> lockCon(mMutexConnections);
 
 	    // mspConnectedKeyFrames = spConnectedKeyFrames;
 	    mConnectedKeyFrameWeights = KFcounter;
-	    mvpOrderedConnectedKeyFrames = vector<KeyFrame*>(lKFs.begin(),lKFs.end());// 超过 15词被观测到 的 关键帧
-	    mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());//最好的 关键帧序列
+	    mvpOrderedConnectedKeyFrames = std::vector<KeyFrame*>(lKFs.begin(),lKFs.end());// 超过 15词被观测到 的 关键帧
+	    mvOrderedWeights = std::vector<int>(lWs.begin(), lWs.end());//最好的 关键帧序列
 
 	    if(mbFirstConnection && mnId!=0)
 	    {
@@ -449,58 +449,58 @@ namespace ORB_SLAM2
     // set 红黑二叉树
     void KeyFrame::AddChild(KeyFrame *pKF)
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	mspChildrens.insert(pKF);// 插入
     }
 
     // 删除孩子
     void KeyFrame::EraseChild(KeyFrame *pKF)
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	mspChildrens.erase(pKF);
     }
 
     void KeyFrame::ChangeParent(KeyFrame *pKF)
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	mpParent = pKF;
 	pKF->AddChild(this);
     }
 
-    set<KeyFrame*> KeyFrame::GetChilds()
+    std::set<KeyFrame*> KeyFrame::GetChilds()
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	return mspChildrens;
     }
 
     KeyFrame* KeyFrame::GetParent()
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	return mpParent;
     }
 
     bool KeyFrame::hasChild(KeyFrame *pKF)
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	return mspChildrens.count(pKF);
     }
 
     void KeyFrame::AddLoopEdge(KeyFrame *pKF)
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	mbNotErase = true;
 	mspLoopEdges.insert(pKF);
     }
 
-    set<KeyFrame*> KeyFrame::GetLoopEdges()//
+    std::set<KeyFrame*> KeyFrame::GetLoopEdges()//
     {
-	unique_lock<mutex> lockCon(mMutexConnections);
+	std::unique_lock<std::mutex> lockCon(mMutexConnections);
 	return mspLoopEdges;
     }
 
     void KeyFrame::SetNotErase()
     {
-	unique_lock<mutex> lock(mMutexConnections);
+	std::unique_lock<std::mutex> lock(mMutexConnections);
 	mbNotErase = true;
     }
 
@@ -508,7 +508,7 @@ namespace ORB_SLAM2
     void KeyFrame::SetErase()
     {
 	{
-	    unique_lock<mutex> lock(mMutexConnections);
+	    std::unique_lock<std::mutex> lock(mMutexConnections);
 	    if(mspLoopEdges.empty())
 	    {
 		mbNotErase = false;
@@ -532,7 +532,7 @@ namespace ORB_SLAM2
     void KeyFrame::SetBadFlag()
     {   
 	{
-	    unique_lock<mutex> lock(mMutexConnections);
+	    std::unique_lock<std::mutex> lock(mMutexConnections);
 	    if(mnId==0)
 		return;
 	    else if(mbNotErase)
@@ -542,7 +542,7 @@ namespace ORB_SLAM2
 	    }
 	}
     //【1】 删除原有 连接关系
-       // map<KeyFrame*,int>::iterator
+       // std::map<KeyFrame*,int>::iterator
 	for(auto mit = mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit != mend; mit++)
 	    mit->first->EraseConnection(this);
 
@@ -550,15 +550,15 @@ namespace ORB_SLAM2
 	    if(mvpMapPoints[i])
 		mvpMapPoints[i]->EraseObservation(this);
 	   {
-	    unique_lock<mutex> lock(mMutexConnections);
-	    unique_lock<mutex> lock1(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexConnections);
+	    std::unique_lock<std::mutex> lock1(mMutexFeatures);
 
 	    mConnectedKeyFrameWeights.clear();
 	    mvpOrderedConnectedKeyFrames.clear();
 
 	    // Update Spanning Tree
    // 【2】首先将当前帧的父亲，放入候选父亲中    
-	    set<KeyFrame*> sParentCandidates;
+	    std::set<KeyFrame*> sParentCandidates;
 	    sParentCandidates.insert(mpParent);
 
 	    // Assign at each iteration one children with a parent (the pair with highest covisibility weight)
@@ -572,7 +572,7 @@ namespace ORB_SLAM2
 		KeyFrame* pP;
 		
 	// 【3】 遍历当前帧的所有儿子	  每个儿子需要在 父亲帧的父亲帧中 找到一个  新父亲帧
-                  // set<KeyFrame*>::iterator
+                  // std::set<KeyFrame*>::iterator
 		for(auto sit=mspChildrens.begin(), send=mspChildrens.end(); sit != send; sit++)
 		{
 		    KeyFrame* pKF = *sit;// 当前帧的 儿子帧
@@ -581,9 +581,9 @@ namespace ORB_SLAM2
 		    
            // 【4】然后遍历儿子A的每个共视帧
 		    // Check if a parent candidate is connected to the keyframe
-		    vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();//儿子帧A的所有共视帧
+		    std::vector<KeyFrame*> vpConnected = pKF->GetVectorCovisibleKeyFrames();//儿子帧A的所有共视帧
 		    for(size_t i=0, iend=vpConnected.size(); i<iend; i++)
-		    {   // set<KeyFrame*>::iterator
+		    {   // std::set<KeyFrame*>::iterator
 	        // 【5】查看儿子帧的每一个共视帧 是不是 候选父亲帧 中的一个   
 			for( auto spcit=sParentCandidates.begin(), spcend=sParentCandidates.end(); spcit!=spcend; spcit++)
 			{
@@ -620,7 +620,7 @@ namespace ORB_SLAM2
      // 并且B与当前帧的儿子之间也没有共视关系：当前帧不是一个好的关键帧，本来就没有多少儿子；
      // 或者B本身是个例外，恩，反正B是个孤家寡人。。。
 	    if(!mspChildrens.empty())
-	      // set<KeyFrame*>::iterator
+	      // std::set<KeyFrame*>::iterator
 		for(auto  sit=mspChildrens.begin(); sit != mspChildrens.end(); sit++)
 		{
 		    (*sit)->ChangeParent(mpParent);// 直接将儿子帧B的父亲 设置为当前帧的父亲，交给爷爷去管
@@ -636,7 +636,7 @@ namespace ORB_SLAM2
 
     bool KeyFrame::isBad()
     {
-	unique_lock<mutex> lock(mMutexConnections);
+	std::unique_lock<std::mutex> lock(mMutexConnections);
 	return mbBad;
     }
 
@@ -644,7 +644,7 @@ namespace ORB_SLAM2
     {
 	bool bUpdate = false;
 	{
-	    unique_lock<mutex> lock(mMutexConnections);
+	    std::unique_lock<std::mutex> lock(mMutexConnections);
 	    if(mConnectedKeyFrameWeights.count(pKF))
 	    {
 		mConnectedKeyFrameWeights.erase(pKF);
@@ -656,24 +656,24 @@ namespace ORB_SLAM2
 	    UpdateBestCovisibles();
     }
 
-    vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r) const
+    std::vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r) const
     {
-	vector<size_t> vIndices;
+	std::vector<size_t> vIndices;
 	vIndices.reserve(N);
 
-	const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
+	const int nMinCellX = std::max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
 	if(nMinCellX>=mnGridCols)
 	    return vIndices;
 
-	const int nMaxCellX = min((int)mnGridCols-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
+	const int nMaxCellX = std::min((int)mnGridCols-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
 	if(nMaxCellX<0)
 	    return vIndices;
 
-	const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
+	const int nMinCellY = std::max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
 	if(nMinCellY>=mnGridRows)
 	    return vIndices;
 
-	const int nMaxCellY = min((int)mnGridRows-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
+	const int nMaxCellY = std::min((int)mnGridRows-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
 	if(nMaxCellY<0)
 	    return vIndices;
 
@@ -681,7 +681,7 @@ namespace ORB_SLAM2
 	{
 	    for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
 	    {
-		const vector<size_t> vCell = mGrid[ix][iy];
+		const std::vector<size_t> vCell = mGrid[ix][iy];
 		for(size_t j=0, jend=vCell.size(); j<jend; j++)
 		{
 		    const cv::KeyPoint &kpUn = mvKeysUn[vCell[j]];
@@ -713,7 +713,7 @@ namespace ORB_SLAM2
 	    const float y = (v-cy)*z*invfy;
 	    cv::Mat x3Dc = (cv::Mat_<float>(3,1) << x, y, z);
 
-	    unique_lock<mutex> lock(mMutexPose);
+	    std::unique_lock<std::mutex> lock(mMutexPose);
 	    return Twc.rowRange(0,3).colRange(0,3)*x3Dc+Twc.rowRange(0,3).col(3);
 	}
 	else
@@ -723,16 +723,16 @@ namespace ORB_SLAM2
     //  单目 环境 深度中值
     float KeyFrame::ComputeSceneMedianDepth(const int q)
     {
-	vector<MapPoint*> vpMapPoints;
+	std::vector<MapPoint*> vpMapPoints;
 	cv::Mat Tcw_;
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
-	    unique_lock<mutex> lock2(mMutexPose);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock2(mMutexPose);
 	    vpMapPoints = mvpMapPoints;
 	    Tcw_ = Tcw.clone();
 	}
 
-	vector<float> vDepths;
+	std::vector<float> vDepths;
 	vDepths.reserve(N);
 	cv::Mat Rcw2 = Tcw_.row(2).colRange(0,3);// 第三行 乘以 坐标 是z轴的坐标值
 	Rcw2 = Rcw2.t();
@@ -748,7 +748,7 @@ namespace ORB_SLAM2
 	    }
 	}
 
-	sort(vDepths.begin(),vDepths.end());// 排序
+	std::sort(vDepths.begin(),vDepths.end());// 排序
 
 	return vDepths[(vDepths.size()-1)/q];//深度中值
     }

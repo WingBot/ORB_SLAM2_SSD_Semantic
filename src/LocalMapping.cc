@@ -164,7 +164,7 @@ namespace ORB_SLAM2
  */
 	void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
 	{
-	    unique_lock<mutex> lock(mMutexNewKFs);
+	    std::unique_lock<std::mutex> lock(mMutexNewKFs);
 	     // 将关键帧插入到 等待处理的关键帧列表中
 	    mlNewKeyFrames.push_back(pKF);
 	    mbAbortBA=true;// BA优化停止
@@ -176,7 +176,7 @@ namespace ORB_SLAM2
  */
 	bool LocalMapping::CheckNewKeyFrames()
 	{
-	    unique_lock<mutex> lock(mMutexNewKFs);
+	    std::unique_lock<std::mutex> lock(mMutexNewKFs);
 	    return(!mlNewKeyFrames.empty());// 等待处理的关键帧列表是否为空
 	}
 
@@ -207,7 +207,7 @@ namespace ORB_SLAM2
 // 步骤1：从缓冲队列中取出一帧待处理的关键帧
              // Tracking线程向LocalMapping中插入关键帧存在该队列中
 	    {
-		unique_lock<mutex> lock(mMutexNewKFs);
+		std::unique_lock<std::mutex> lock(mMutexNewKFs);
 		// 从列表中获得一个等待被插入的关键帧
 		mpCurrentKeyFrame = mlNewKeyFrames.front();
 		mlNewKeyFrames.pop_front();// 出队
@@ -223,7 +223,7 @@ namespace ORB_SLAM2
 // 步骤3：跟踪局部地图过程中新匹配上的MapPoints和当前关键帧绑定
 	      // 在TrackLocalMap函数中将局部地图中的MapPoints与当前帧进行了匹配，
 	      // 但没有对这些匹配上的MapPoints与当前帧进行关联    
-	    const vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
+	    const std::vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
 	    for(size_t i=0; i<vpMapPointMatches.size(); i++)
 	    {
 		MapPoint* pMP = vpMapPointMatches[i];// 每一个与当前关键帧匹配好的地图点
@@ -270,7 +270,7 @@ namespace ORB_SLAM2
 	void LocalMapping::MapPointCulling()
 	{
 	    // Check Recent Added MapPoints
-	    list<MapPoint*>::iterator lit = mlpRecentAddedMapPoints.begin();//待检测的地图点 迭代器
+	    std::list<MapPoint*>::iterator lit = mlpRecentAddedMapPoints.begin();//待检测的地图点 迭代器
 	    const unsigned long int nCurrentKFid = mpCurrentKeyFrame->mnId;//当前关键帧id
 
 	    //  从添加该地图点的关键帧算起的 初始三个关键帧，
@@ -354,7 +354,7 @@ namespace ORB_SLAM2
 		nn=20;//单目
 		
 // 步骤1：在当前关键帧的 共视关键帧 中找到 共视程度 最高的nn帧 相邻帧vpNeighKFs
-	    const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
+	    const std::vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
 
 	    ORBmatcher matcher(0.6,false);// 描述子匹配器 
             // 当前关键帧 旋转平移矩阵向量
@@ -418,7 +418,7 @@ namespace ORB_SLAM2
 
 		// Search matches that fullfil epipolar constraint
 // 步骤5：通过帧间词典向量加速匹配，极线约束限制匹配时的搜索范围，进行特征点匹配		
-		vector<pair<size_t,size_t> > vMatchedIndices;// 特征匹配候选点
+		std::vector<std::pair<size_t,size_t> > vMatchedIndices;// 特征匹配候选点
 		matcher.SearchForTriangulation(mpCurrentKeyFrame,pKF2,F12,vMatchedIndices,false);
 
          	 // 相邻关键帧 旋转平移矩阵向量
@@ -476,7 +476,7 @@ namespace ORB_SLAM2
 		    else if(bStereo2)
 			cosParallaxStereo2 = cos(2*atan2(pKF2->mb/2,pKF2->mvDepth[idx2]));
 		    // 得到双目观测的视差角
-		    cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
+		    cosParallaxStereo = std::min(cosParallaxStereo1,cosParallaxStereo2);
 		    
 	 // 步骤6.4：三角化恢复3D点
 		    cv::Mat x3D;
@@ -658,10 +658,10 @@ namespace ORB_SLAM2
 	    if(mbMonocular)
 		nn=20;//单目 多找一些	
 	   // 一级相邻	
-	    const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
-	    vector<KeyFrame*> vpTargetKFs;// 最后合格的一级二级相邻关键帧
+	    const std::vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
+	    std::vector<KeyFrame*> vpTargetKFs;// 最后合格的一级二级相邻关键帧
 	    // 遍历每一个 一级相邻帧
-	    for(vector<KeyFrame*>::const_iterator vit=vpNeighKFs.begin(), vend=vpNeighKFs.end(); vit!=vend; vit++)
+	    for(std::vector<KeyFrame*>::const_iterator vit=vpNeighKFs.begin(), vend=vpNeighKFs.end(); vit!=vend; vit++)
 	    {
 		KeyFrame* pKFi = *vit;// 一级相邻关键帧
 		if(pKFi->isBad() || pKFi->mnFuseTargetForKF == mpCurrentKeyFrame->mnId)//坏帧  或者 已经加入过
@@ -672,9 +672,9 @@ namespace ORB_SLAM2
  // 步骤2：获得当前关键帧在 其一级相邻帧的  covisibility图中权重排名前5的二级邻接关键帧
 	        // 二级相邻	
 		// Extend to some second neighbors
-		const vector<KeyFrame*> vpSecondNeighKFs = pKFi->GetBestCovisibilityKeyFrames(5);
+		const std::vector<KeyFrame*> vpSecondNeighKFs = pKFi->GetBestCovisibilityKeyFrames(5);
 		// 遍历每一个 二级相邻帧
-		for(vector<KeyFrame*>::const_iterator vit2=vpSecondNeighKFs.begin(), vend2=vpSecondNeighKFs.end(); vit2!=vend2; vit2++)
+		for(std::vector<KeyFrame*>::const_iterator vit2=vpSecondNeighKFs.begin(), vend2=vpSecondNeighKFs.end(); vit2!=vend2; vit2++)
 		{
 		    KeyFrame* pKFi2 = *vit2;// 二级相邻关键帧
 		    if(pKFi2->isBad() || pKFi2->mnFuseTargetForKF==mpCurrentKeyFrame->mnId || pKFi2->mnId==mpCurrentKeyFrame->mnId)
@@ -686,8 +686,8 @@ namespace ORB_SLAM2
 // 步骤3：将当前帧的 地图点MapPoints 分别与 其一级二级相邻帧的 地图点 MapPoints 进行融合
 	    // Search matches by projection from current KF in target KFs
 	    ORBmatcher matcher;
-	    vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();//与当前帧 匹配的地图点
-	    // vector<KeyFrame*>::iterator
+	    std::vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();//与当前帧 匹配的地图点
+	    // std::vector<KeyFrame*>::iterator
 	    for(auto  vit=vpTargetKFs.begin(), vend=vpTargetKFs.end(); vit!=vend; vit++)
 	    {
 		KeyFrame* pKFi = *vit;//其一级二级相邻帧
@@ -702,15 +702,15 @@ namespace ORB_SLAM2
             // 遍历每一个一级邻接和二级邻接关键帧 找到所有的地图点
 	    // Search matches by projection from target KFs in current KF
 	    // 用于存储一级邻接和二级邻接关键帧所有MapPoints的集合
-	    vector<MapPoint*> vpFuseCandidates;// 一级二级相邻帧所有地图点
+	    std::vector<MapPoint*> vpFuseCandidates;// 一级二级相邻帧所有地图点
 	    vpFuseCandidates.reserve(vpTargetKFs.size() * vpMapPointMatches.size());// 帧数量 × 每一帧地图点数量
-            // vector<KeyFrame*>::iterator
+            // std::vector<KeyFrame*>::iterator
 	    for(auto vitKF=vpTargetKFs.begin(), vendKF=vpTargetKFs.end(); vitKF!=vendKF; vitKF++)
 	    {
 		KeyFrame* pKFi = *vitKF;//其一级二级相邻帧
-		vector<MapPoint*> vpMapPointsKFi = pKFi->GetMapPointMatches();//地图点
+		std::vector<MapPoint*> vpMapPointsKFi = pKFi->GetMapPointMatches();//地图点
 		
-		// vector<MapPoint*>::iterator
+		// std::vector<MapPoint*>::iterator
 		for(auto vitMP=vpMapPointsKFi.begin(), vendMP=vpMapPointsKFi.end(); vitMP!=vendMP; vitMP++)
 		{
 		    MapPoint* pMP = *vitMP;//  一级二级相邻帧 的每一个地图点
@@ -769,9 +769,9 @@ void LocalMapping::KeyFrameCulling()
 	    // We only consider close stereo points
 	  
 // 步骤1：根据Covisibility Graph 关键帧连接 图提取当前帧的 所有共视关键帧(关联帧)	  
-	    vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
+	    std::vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
 	    
-            // vector<KeyFrame*>::iterator
+            // std::vector<KeyFrame*>::iterator
            // 对所有的局部关键帧进行遍历	    
 	    for(auto  vit=vpLocalKeyFrames.begin(), vend=vpLocalKeyFrames.end(); vit!=vend; vit++)
 	    {
@@ -780,7 +780,7 @@ void LocalMapping::KeyFrameCulling()
 		    continue;
 		
 // 步骤2：提取每个共视关键帧的 地图点 MapPoints		
-		const vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();// 局部关联帧 匹配的 地图点
+		const std::vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();// 局部关联帧 匹配的 地图点
 
 		int nObs = 3;
 		const int thObs=nObs; //3
@@ -806,9 +806,9 @@ void LocalMapping::KeyFrameCulling()
 			    if(pMP->Observations() > thObs)// 观测帧个数 > 3
 			    {
 				const int &scaleLevel = pKF->mvKeysUn[i].octave;// 金字塔层数
-				const map<KeyFrame*, size_t> observations = pMP->GetObservations();// 局部 观测关键帧地图
+				const std::map<KeyFrame*, size_t> observations = pMP->GetObservations();// 局部 观测关键帧地图
 				int nObs=0;
-				for(map<KeyFrame*, size_t>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
+				for(std::map<KeyFrame*, size_t>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
 				{
 				    KeyFrame* pKFi = mit->first;
 				    if(pKFi==pKF)// 跳过 原地图点的帧
@@ -872,9 +872,9 @@ void LocalMapping::KeyFrameCulling()
  */	
 	void LocalMapping::RequestStop()
 	{
-	    unique_lock<mutex> lock(mMutexStop);
+	    std::unique_lock<std::mutex> lock(mMutexStop);
 	    mbStopRequested = true;//局部建图 请求停止
-	    unique_lock<mutex> lock2(mMutexNewKFs);
+	    std::unique_lock<std::mutex> lock2(mMutexNewKFs);
 	    mbAbortBA = true;//停止BA 优化
 	}
 	
@@ -884,7 +884,7 @@ void LocalMapping::KeyFrameCulling()
  */	
 	bool LocalMapping::Stop()
 	{
-	    unique_lock<mutex> lock(mMutexStop);
+	    std::unique_lock<std::mutex> lock(mMutexStop);
 	    if(mbStopRequested && !mbNotStop)
 	    {
 		mbStopped = true;
@@ -900,7 +900,7 @@ void LocalMapping::KeyFrameCulling()
  */	
 	bool LocalMapping::isStopped()
 	{
-	    unique_lock<mutex> lock(mMutexStop);
+	    std::unique_lock<std::mutex> lock(mMutexStop);
 	    return mbStopped;
 	}
 	
@@ -910,7 +910,7 @@ void LocalMapping::KeyFrameCulling()
  */	
 	bool LocalMapping::stopRequested()
 	{
-	    unique_lock<mutex> lock(mMutexStop);
+	    std::unique_lock<std::mutex> lock(mMutexStop);
 	    return mbStopRequested;
 	}
 	
@@ -920,13 +920,13 @@ void LocalMapping::KeyFrameCulling()
  */	
 	void LocalMapping::Release()
 	{
-	    unique_lock<mutex> lock(mMutexStop);
-	    unique_lock<mutex> lock2(mMutexFinish);
+	    std::unique_lock<std::mutex> lock(mMutexStop);
+	    std::unique_lock<std::mutex> lock2(mMutexFinish);
 	    if(mbFinished)
 		return;
 	    mbStopped = false;
 	    mbStopRequested = false;
-	    // list<KeyFrame*>::iterator
+	    // std::list<KeyFrame*>::iterator
 	    for(auto lit = mlNewKeyFrames.begin(), lend=mlNewKeyFrames.end(); lit!=lend; lit++)
 		delete *lit;//删除关键帧
 	    mlNewKeyFrames.clear();
@@ -940,7 +940,7 @@ void LocalMapping::KeyFrameCulling()
  */		
 	bool LocalMapping::AcceptKeyFrames()
 	{
-	    unique_lock<mutex> lock(mMutexAccept);
+	    std::unique_lock<std::mutex> lock(mMutexAccept);
 	    return mbAcceptKeyFrames;
 	}
 	
@@ -950,7 +950,7 @@ void LocalMapping::KeyFrameCulling()
  */
 	void LocalMapping::SetAcceptKeyFrames(bool flag)
 	{
-	    unique_lock<mutex> lock(mMutexAccept);
+	    std::unique_lock<std::mutex> lock(mMutexAccept);
 	    mbAcceptKeyFrames=flag;
 	}
 	
@@ -960,7 +960,7 @@ void LocalMapping::KeyFrameCulling()
  */
 	bool LocalMapping::SetNotStop(bool flag)
 	{
-	    unique_lock<mutex> lock(mMutexStop);
+	    std::unique_lock<std::mutex> lock(mMutexStop);
 
 	    if(flag && mbStopped)//  在已经停止的情况下 设置不要停止   错误
 		return false;
@@ -1004,14 +1004,14 @@ void LocalMapping::KeyFrameCulling()
 	void LocalMapping::RequestReset()
 	{
 	    {
-		unique_lock<mutex> lock(mMutexReset);
+		std::unique_lock<std::mutex> lock(mMutexReset);
 		mbResetRequested = true;
 	    }
 
 	    while(1)
 	    {
 		{
-		    unique_lock<mutex> lock2(mMutexReset);
+		    std::unique_lock<std::mutex> lock2(mMutexReset);
 		    if(!mbResetRequested)
 			break;
 		}
@@ -1025,7 +1025,7 @@ void LocalMapping::KeyFrameCulling()
  */
 	void LocalMapping::ResetIfRequested()
 	{
-	    unique_lock<mutex> lock(mMutexReset);
+	    std::unique_lock<std::mutex> lock(mMutexReset);
 	    if(mbResetRequested)
 	    {
 		mlNewKeyFrames.clear();
@@ -1036,27 +1036,27 @@ void LocalMapping::KeyFrameCulling()
 	
 	void LocalMapping::RequestFinish()
 	{
-	    unique_lock<mutex> lock(mMutexFinish);
+	    std::unique_lock<std::mutex> lock(mMutexFinish);
 	    mbFinishRequested = true;
 	}
 
 	bool LocalMapping::CheckFinish()
 	{
-	    unique_lock<mutex> lock(mMutexFinish);
+	    std::unique_lock<std::mutex> lock(mMutexFinish);
 	    return mbFinishRequested;
 	}
 
 	void LocalMapping::SetFinish()
 	{
-	    unique_lock<mutex> lock(mMutexFinish);
+	    std::unique_lock<std::mutex> lock(mMutexFinish);
 	    mbFinished = true;    
-	    unique_lock<mutex> lock2(mMutexStop);
+	    std::unique_lock<std::mutex> lock2(mMutexStop);
 	    mbStopped = true;
 	}
 
 	bool LocalMapping::isFinished()
 	{
-	    unique_lock<mutex> lock(mMutexFinish);
+	    std::unique_lock<std::mutex> lock(mMutexFinish);
 	    return mbFinished;
 	}
 

@@ -56,7 +56,7 @@ namespace ORB_SLAM2
 // 灰度质心法计算特征点方向
 // 灰度质心法假设角点的灰度与质心之间存在一个偏移，这个向量可以用于表示一个方向，
 // 具体也就是计算这个区域的所有像素和对应x的坐标的乘积与所有像素与对应y的坐标的乘积的比值,计算反正切。
-      static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
+      static float IC_Angle(const Mat& image, Point2f pt,  const std::vector<int> & u_max)
       {
 	  int m_01 = 0, m_10 = 0;
 	  // 得到中心位置
@@ -436,7 +436,7 @@ namespace ORB_SLAM2
 	      sumFeatures += mnFeaturesPerLevel[level];// 前nlevels -1 层 总共的特征点数
 	      nDesiredFeaturesPerScale *= factor;
 	  }
-	  mnFeaturesPerLevel[nlevels-1] = std::max(nfeatures - sumFeatures, 0);//最后一层的 特征点数
+   mnFeaturesPerLevel[nlevels-1] = std::max(nfeatures - sumFeatures, 0);//最后一层的 特征点数
 // 【4】 接下来做一些初始化，用于计算特征的方向和描述
 	  const int npoints = 512;
 	 // 复制训练的模板
@@ -466,9 +466,9 @@ namespace ORB_SLAM2
       }
 
   // 计算特征方向是为了保证特征具有旋转不变的特性。  
-      static void computeOrientation(const Mat& image, vector<KeyPoint>& keypoints, const vector<int>& umax)
+      static void computeOrientation(const Mat& image, std::vector<KeyPoint>& keypoints, const std::vector<int>& umax)
       {
-	  for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+	  for (std::vector<KeyPoint>::iterator keypoint = keypoints.begin(),
 	      keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
 	  {
 	      keypoint->angle = IC_Angle(image, keypoint->pt, umax);
@@ -537,7 +537,7 @@ namespace ORB_SLAM2
  //  将特征点进行  八叉树划分
  // 接下来就是将图像划分成八叉树形式，根据这一层的特征数 N 确定八叉树的节点，
 // 将这一层图像检测到的特征划分到这些节点，保证每个节点里面有一个特征。
-      vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
+      std::vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
 					    const int &maxX, const int &minY, const int &maxY, const int &N, const int &level)
       {
 	  // Compute how many initial nodes   
@@ -546,8 +546,8 @@ namespace ORB_SLAM2
  // 【2】得到节点之间的间隔
 	  const float hX = static_cast<float>(maxX-minX)/nIni;
 //  【3】划分之后包含的节点
-	  list<ExtractorNode> lNodes;
-	  vector<ExtractorNode*> vpIniNodes;
+	  std::list<ExtractorNode> lNodes;
+	  std::vector<ExtractorNode*> vpIniNodes;
 	  vpIniNodes.resize(nIni);
 
 	  for(int i=0; i<nIni; i++)
@@ -570,7 +570,7 @@ namespace ORB_SLAM2
 	      vpIniNodes[kp.pt.x/hX]->vKeys.push_back(kp);
 	  }
 
-	  list<ExtractorNode>::iterator lit = lNodes.begin();
+	  std::list<ExtractorNode>::iterator lit = lNodes.begin();
 
 	  while(lit!=lNodes.end())
 	  {
@@ -590,7 +590,7 @@ namespace ORB_SLAM2
 
 	  int iteration = 0;
          //节点及对应包含的特征数
-	  vector<pair<int,ExtractorNode*> > vSizeAndPointerToNode;
+	  std::vector<std::pair<int,ExtractorNode*> > vSizeAndPointerToNode;
 	  vSizeAndPointerToNode.reserve(lNodes.size()*4);
 
 	  while(!bFinish)
@@ -626,7 +626,7 @@ namespace ORB_SLAM2
 			  if(n1.vKeys.size()>1)
 			  {
 			      nToExpand++;
-			      vSizeAndPointerToNode.push_back(make_pair(n1.vKeys.size(),&lNodes.front()));
+			      vSizeAndPointerToNode.push_back(std::make_pair(n1.vKeys.size(),&lNodes.front()));
 			      lNodes.front().lit = lNodes.begin();
 			  }
 		      }
@@ -636,7 +636,7 @@ namespace ORB_SLAM2
 			  if(n2.vKeys.size()>1)
 			  {
 			      nToExpand++;
-			      vSizeAndPointerToNode.push_back(make_pair(n2.vKeys.size(),&lNodes.front()));
+			      vSizeAndPointerToNode.push_back(std::make_pair(n2.vKeys.size(),&lNodes.front()));
 			      lNodes.front().lit = lNodes.begin();
 			  }
 		      }
@@ -646,7 +646,7 @@ namespace ORB_SLAM2
 			  if(n3.vKeys.size()>1)
 			  {
 			      nToExpand++;
-			      vSizeAndPointerToNode.push_back(make_pair(n3.vKeys.size(),&lNodes.front()));
+			      vSizeAndPointerToNode.push_back(std::make_pair(n3.vKeys.size(),&lNodes.front()));
 			      lNodes.front().lit = lNodes.begin();
 			  }
 		      }
@@ -656,7 +656,7 @@ namespace ORB_SLAM2
 			  if(n4.vKeys.size()>1)
 			  {
 			      nToExpand++;
-			      vSizeAndPointerToNode.push_back(make_pair(n4.vKeys.size(),&lNodes.front()));
+			      vSizeAndPointerToNode.push_back(std::make_pair(n4.vKeys.size(),&lNodes.front()));
 			      lNodes.front().lit = lNodes.begin();
 			  }
 		      }
@@ -680,10 +680,10 @@ namespace ORB_SLAM2
 
 		      prevSize = lNodes.size();
 
-		      vector<pair<int,ExtractorNode*> > vPrevSizeAndPointerToNode = vSizeAndPointerToNode;
+		      std::vector<std::pair<int,ExtractorNode*> > vPrevSizeAndPointerToNode = vSizeAndPointerToNode;
 		      vSizeAndPointerToNode.clear();
 
-		      sort(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end());
+		      std::sort(vPrevSizeAndPointerToNode.begin(),vPrevSizeAndPointerToNode.end());
 		      for(int j=vPrevSizeAndPointerToNode.size()-1;j>=0;j--)
 		      {
 			  ExtractorNode n1,n2,n3,n4;
@@ -695,7 +695,7 @@ namespace ORB_SLAM2
 			      lNodes.push_front(n1);
 			      if(n1.vKeys.size()>1)
 			      {
-				  vSizeAndPointerToNode.push_back(make_pair(n1.vKeys.size(),&lNodes.front()));
+				  vSizeAndPointerToNode.push_back(std::make_pair(n1.vKeys.size(),&lNodes.front()));
 				  lNodes.front().lit = lNodes.begin();
 			      }
 			  }
@@ -704,7 +704,7 @@ namespace ORB_SLAM2
 			      lNodes.push_front(n2);
 			      if(n2.vKeys.size()>1)
 			      {
-				  vSizeAndPointerToNode.push_back(make_pair(n2.vKeys.size(),&lNodes.front()));
+				  vSizeAndPointerToNode.push_back(std::make_pair(n2.vKeys.size(),&lNodes.front()));
 				  lNodes.front().lit = lNodes.begin();
 			      }
 			  }
@@ -713,7 +713,7 @@ namespace ORB_SLAM2
 			      lNodes.push_front(n3);
 			      if(n3.vKeys.size()>1)
 			      {
-				  vSizeAndPointerToNode.push_back(make_pair(n3.vKeys.size(),&lNodes.front()));
+				  vSizeAndPointerToNode.push_back(std::make_pair(n3.vKeys.size(),&lNodes.front()));
 				  lNodes.front().lit = lNodes.begin();
 			      }
 			  }
@@ -722,7 +722,7 @@ namespace ORB_SLAM2
 			      lNodes.push_front(n4);
 			      if(n4.vKeys.size()>1)
 			      {
-				  vSizeAndPointerToNode.push_back(make_pair(n4.vKeys.size(),&lNodes.front()));
+				  vSizeAndPointerToNode.push_back(std::make_pair(n4.vKeys.size(),&lNodes.front()));
 				  lNodes.front().lit = lNodes.begin();
 			      }
 			  }
@@ -741,11 +741,11 @@ namespace ORB_SLAM2
 	  }
 
 	  // Retain the best point in each node
-	  vector<cv::KeyPoint> vResultKeys;
+	  std::vector<cv::KeyPoint> vResultKeys;
 	  vResultKeys.reserve(nfeatures);
-	  for(list<ExtractorNode>::iterator lit=lNodes.begin(); lit!=lNodes.end(); lit++)
+	  for(std::list<ExtractorNode>::iterator lit=lNodes.begin(); lit!=lNodes.end(); lit++)
 	  {
-	      vector<cv::KeyPoint> &vNodeKeys = lit->vKeys;
+	      std::vector<cv::KeyPoint> &vNodeKeys = lit->vKeys;
 	      cv::KeyPoint* pKP = &vNodeKeys[0];
 	      float maxResponse = pKP->response;
 
@@ -768,7 +768,7 @@ namespace ORB_SLAM2
 // 主要就是划分格子，在不同的尺度下，每个格子进行Fast特征检测，
 // 接下来就是将图像划分成八叉树形式，根据这一层的特征数确定八叉树的节点，
 // 将这一层图像检测到的特征划分到这些节点，保证每个节点里面有一个特征。
-      void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoints)
+      void ORBextractor::ComputeKeyPointsOctTree(std::vector<std::vector<KeyPoint> >& allKeypoints)
       {
 	  allKeypoints.resize(nlevels);// 容器 容器  每一层级 产生的 特征点
 
@@ -785,7 +785,7 @@ namespace ORB_SLAM2
 	      const float height = (maxBorderY-minBorderY);
 	      
 	// 【2】 用于分配的关键点
-	      vector<cv::KeyPoint> vToDistributeKeys;
+	      std::vector<cv::KeyPoint> vToDistributeKeys;
 	      vToDistributeKeys.reserve(nfeatures*10);
 	
         // 【3】将待检测区域划分为格子的行列数
@@ -814,7 +814,7 @@ namespace ORB_SLAM2
 		      if(maxX>maxBorderX)
 			  maxX = maxBorderX;
 
-		      vector<cv::KeyPoint> vKeysCell;
+		      std::vector<cv::KeyPoint> vKeysCell;
 		      FAST(mvImagePyramid[level].rowRange(iniY,maxY).colRange(iniX,maxX),
 			  vKeysCell,iniThFAST,true);// 按大阈值提取 fast 角点
 	    // 【5】如果检测到的fast特征为空，则降低阈值再进行检测
@@ -825,7 +825,7 @@ namespace ORB_SLAM2
 		      }
              // 【6】 计算实际特征点的位置
 		      if(!vKeysCell.empty())// 提取到角点了
-		      {//vector<cv::KeyPoint>::iterator
+		      {//std::vector<cv::KeyPoint>::iterator
 			  for( auto vit=vKeysCell.begin(); vit!=vKeysCell.end();vit++)
 			  {
 			      (*vit).pt.x += j*wCell;// 小格子内的点坐标  变换到 整幅图像上 的 坐标 
@@ -837,7 +837,7 @@ namespace ORB_SLAM2
 		  }
 	      }
 
-	      vector<KeyPoint> & keypoints = allKeypoints[level];
+	      std::vector<KeyPoint> & keypoints = allKeypoints[level];
 	      keypoints.reserve(nfeatures);
      //【7】 将特征点进行  八叉树划分   层级 图像范围  层级特征点个数  层级
 	      keypoints = DistributeOctTree(vToDistributeKeys, minBorderX, maxBorderX,
@@ -887,13 +887,13 @@ namespace ORB_SLAM2
 	      const int nCells = levelRows*levelCols;
 	      const int nfeaturesCell = ceil((float)nDesiredFeatures/nCells);
 
-	      vector<vector<vector<KeyPoint> > > cellKeyPoints(levelRows, vector<vector<KeyPoint> >(levelCols));
+	      std::vector<std::vector<std::vector<KeyPoint> > > cellKeyPoints(levelRows, std::vector<std::vector<KeyPoint> >(levelCols));
 
-	      vector<vector<int> > nToRetain(levelRows,vector<int>(levelCols,0));
-	      vector<vector<int> > nTotal(levelRows,vector<int>(levelCols,0));
-	      vector<vector<bool> > bNoMore(levelRows,vector<bool>(levelCols,false));
-	      vector<int> iniXCol(levelCols);
-	      vector<int> iniYRow(levelRows);
+	      std::vector<std::vector<int> > nToRetain(levelRows,std::vector<int>(levelCols,0));
+	      std::vector<std::vector<int> > nTotal(levelRows,std::vector<int>(levelCols,0));
+	      std::vector<std::vector<bool> > bNoMore(levelRows,std::vector<bool>(levelCols,false));
+	      std::vector<int> iniXCol(levelCols);
+	      std::vector<int> iniYRow(levelRows);
 	      int nNoMore = 0;
 	      int nToDistribute = 0;
 
@@ -1001,7 +1001,7 @@ namespace ORB_SLAM2
 		  }
 	      }
 
-	      vector<KeyPoint> & keypoints = allKeypoints[level];
+	      std::vector<KeyPoint> & keypoints = allKeypoints[level];
 	      keypoints.reserve(nDesiredFeatures*2);
 
 	      const int scaledPatchSize = PATCH_SIZE*mvScaleFactor[level];
@@ -1011,7 +1011,7 @@ namespace ORB_SLAM2
 	      {
 		  for(int j=0; j<levelCols; j++)
 		  {
-		      vector<KeyPoint> &keysCell = cellKeyPoints[i][j];
+		      std::vector<KeyPoint> &keysCell = cellKeyPoints[i][j];
 		      KeyPointsFilter::retainBest(keysCell,nToRetain[i][j]);
 		      if((int)keysCell.size()>nToRetain[i][j])
 			  keysCell.resize(nToRetain[i][j]);
@@ -1040,8 +1040,8 @@ namespace ORB_SLAM2
 	      computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
       }
 
-      static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
-				    const vector<Point>& pattern)
+      static void computeDescriptors(const Mat& image, std::vector<KeyPoint>& keypoints, Mat& descriptors,
+				    const std::vector<Point>& pattern)
       {
 	  descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
 
@@ -1049,7 +1049,7 @@ namespace ORB_SLAM2
 	      computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
       }
 
-      void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
+      void ORBextractor::operator()( InputArray _image, InputArray _mask, std::vector<KeyPoint>& _keypoints,
 			    OutputArray _descriptors)
       { 
 	  if(_image.empty())
@@ -1061,7 +1061,7 @@ namespace ORB_SLAM2
 	  // Pre-compute the scale pyramid
 	  ComputePyramid(image);
 
-	  vector < vector<KeyPoint> > allKeypoints;
+	  vector < std::vector<KeyPoint> > allKeypoints;
 	  ComputeKeyPointsOctTree(allKeypoints);
 	  //ComputeKeyPointsOld(allKeypoints);
 
@@ -1084,7 +1084,7 @@ namespace ORB_SLAM2
 	  int offset = 0;
 	  for (int level = 0; level < nlevels; ++level)
 	  {
-	      vector<KeyPoint>& keypoints = allKeypoints[level];
+	      std::vector<KeyPoint>& keypoints = allKeypoints[level];
 	      int nkeypointsLevel = (int)keypoints.size();
 
 	      if(nkeypointsLevel==0)
@@ -1104,7 +1104,7 @@ namespace ORB_SLAM2
 	      if (level != 0)
 	      {
 		  float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
-		  for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+		  for (std::vector<KeyPoint>::iterator keypoint = keypoints.begin(),
 		      keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
 		      keypoint->pt *= scale;
 	      }

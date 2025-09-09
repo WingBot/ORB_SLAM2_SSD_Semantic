@@ -11,7 +11,7 @@
 #include"KeyFrame.h"
 #include<pangolin/pangolin.h>
 
-#include<mutex>
+#include <mutex>
 
 namespace ORB_SLAM2
 {
@@ -19,7 +19,7 @@ namespace ORB_SLAM2
 class MapDrawer
 {
 public:
-    MapDrawer(Map* pMap, const string &strSettingPath);
+    MapDrawer(Map* pMap, const std::string &strSettingPath);
 
     Map* mpMap;
 

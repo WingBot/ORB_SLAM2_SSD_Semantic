@@ -54,7 +54,7 @@ c 通过全局重定位来初始化位姿估计 Relocalization()
     重定位的入口如下： bOK = Relocalization();
     此时，只有去和所有关键帧匹配，看能否找到合适的位置。
     首先，计算当前帧的BOW向量，在关键帧词典数据库中选取若干关键帧作为候选。
-         使用函数如下：vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+         使用函数如下：std::vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
     其次，寻找有足够多的特征点匹配的关键帧；最后，利用RANSAC迭代，然后使用PnP算法求解位姿。这一部分也在Tracking::Relocalization() 里
 
     
@@ -121,7 +121,7 @@ namespace ORB_SLAM2
         Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
                            MapDrawer *pMapDrawer, Map *pMap,
                            shared_ptr<PointCloudMapping> pPointCloud,
-                           KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+                           KeyFrameDatabase* pKFDB, const std::string &strSettingPath, const int sensor):
 	    mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), 
             mbVO(false), mpORBVocabulary(pVoc),
             mpPointCloudMapping( pPointCloud ),
@@ -278,13 +278,13 @@ namespace ORB_SLAM2
 	    {
 		if(mbRGB)//  原图 通道RGB顺序
 		{
-		    cvtColor(mImGray,mImGray,CV_RGB2GRAY);
-		    cvtColor(imGrayRight,imGrayRight,CV_RGB2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_RGB2GRAY);
+		    cvtColor(imGrayRight,imGrayRight,cv::COLOR_RGB2GRAY);
 		}
 		else//  原图 通道BGR顺序
 		{
-		    cvtColor(mImGray,mImGray,CV_BGR2GRAY);
-		    cvtColor(imGrayRight,imGrayRight,CV_BGR2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_BGR2GRAY);
+		    cvtColor(imGrayRight,imGrayRight,cv::COLOR_BGR2GRAY);
 		}
 	    }
       // 彩色图带有 透明度 四通道 转换到 灰度图
@@ -292,13 +292,13 @@ namespace ORB_SLAM2
 	    {
 		if(mbRGB)
 		{
-		    cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
-		    cvtColor(imGrayRight,imGrayRight,CV_RGBA2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
+		    cvtColor(imGrayRight,imGrayRight,cv::COLOR_RGBA2GRAY);
 		}
 		else
 		{
-		    cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
-		    cvtColor(imGrayRight,imGrayRight,CV_BGRA2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
+		    cvtColor(imGrayRight,imGrayRight,cv::COLOR_BGRA2GRAY);
 		}
 	    }
 // 步骤2：构造Frame	    
@@ -340,11 +340,11 @@ namespace ORB_SLAM2
 	    if(mImGray.channels()==3)
 	    {
 		if(mbRGB)
-		    cvtColor(mImGray,mImGray,CV_RGB2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_RGB2GRAY);
 		else
                    {
-		     cvtColor(mImGray,mImGray,CV_BGR2GRAY);
-                     cvtColor(mImRGB,mImRGB,CV_BGR2RGB);
+		     cvtColor(mImGray,mImGray,cv::COLOR_BGR2GRAY);
+                     cvtColor(mImRGB,mImRGB,cv::COLOR_BGR2RGB);
                    }
 	    }
      // 彩色图带有 透明度 四通道 转换到 灰度图
@@ -352,13 +352,13 @@ namespace ORB_SLAM2
 	    {
 		if(mbRGB)
                     {
-		       cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
-                       cvtColor(mImRGB,mImRGB,CV_RGBA2RGB);
+		       cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
+                       cvtColor(mImRGB,mImRGB,cv::COLOR_RGBA2RGB);
                     }
 		else
                     {
-		       cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
-                       cvtColor(mImRGB,mImRGB,CV_BGRA2RGB);
+		       cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
+                       cvtColor(mImRGB,mImRGB,cv::COLOR_BGRA2RGB);
                     }
 	    }
 // -------------【2】深度信息---------------------------------
@@ -389,17 +389,17 @@ namespace ORB_SLAM2
 	    if(mImGray.channels()==3)
 	    {
 		if(mbRGB)
-		    cvtColor(mImGray,mImGray,CV_RGB2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_RGB2GRAY);
 		else
-		    cvtColor(mImGray,mImGray,CV_BGR2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_BGR2GRAY);
 	    }
 	 // 彩色图带有 透明度 四通道 转换到 灰度图
 	    else if(mImGray.channels()==4)
 	    {
 		if(mbRGB)
-		    cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
 		else
-		    cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
+		    cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
 	    }
 // --------------------【2】然后将当前读入帧封装为Frame类型的mCurrentFrame对象----------------------------
 	    if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
@@ -514,7 +514,7 @@ LocalMap包含：
 	    mLastProcessedState = mState;
 
 	    // 对地图上锁 Get Map Mutex -> Map cannot be changed
-	    unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+	    std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
 // 步骤1：前一帧的跟踪, 系统未初始化 进行初始化 得到初始化位姿(跟踪估计运动) ==============================
 	    if(mState == NOT_INITIALIZED)
 	    {
@@ -631,8 +631,8 @@ LocalMap包含：
                             // 使用 运动跟踪 和 重定位模式 计算两个位姿，如果重定位成功，使用重定位得到的位姿
 			    bool bOKMM = false;
 			    bool bOKReloc = false;
-			    vector<MapPoint*> vpMPsMM;
-			    vector<bool> vbOutMM;
+			    std::vector<MapPoint*> vpMPsMM;
+			    std::vector<bool> vbOutMM;
 			    cv::Mat TcwMM;// 视觉里程计跟踪得到的 位姿 结果
 			    if(!mVelocity.empty())// 有速度 运动跟踪模式
 			    {
@@ -747,7 +747,7 @@ LocalMap包含：
                   // 这些MapPoints在TrackWithMotionModel的UpdateLastFrame函数里生成（仅双目和rgbd）
 		  // b 中只是在 当前帧 中将这些MapPoints剔除，这里从MapPoints数据库中删除
 		  // 这里生成的仅仅是为了提高双目或rgbd摄像头的帧间跟踪效果，用完以后就扔了，没有添加到地图中
-		    //  list<MapPoint*>::iterator 
+		    //  std::list<MapPoint*>::iterator 
 		    for(auto lit = mlpTemporalPoints.begin(), lend =  mlpTemporalPoints.end(); lit != lend; lit++)
 		    {
 			MapPoint* pMP = *lit;
@@ -969,7 +969,7 @@ LocalMap包含：
         // 【6】匹配点对数量 较多进行初始化 计算相机的移动位姿 根据 基础矩阵 F 或者 单应矩阵 H 计算初始 R t
 		cv::Mat Rcw; //当前相机 旋转矩阵 Current Camera Rotation
 		cv::Mat tcw; // 平移矩阵 Current Camera Translation
-		vector<bool> vbTriangulated; // 符合变换矩阵的内点 且三角化后3D三维坐标正常的点 标志
+		std::vector<bool> vbTriangulated; // 符合变换矩阵的内点 且三角化后3D三维坐标正常的点 标志
 		// Triangulated Correspondences (mvIniMatches)	
  // * 单目相机初始化
 //* 用于平面场景的单应性矩阵H(8中运动假设) 和用于非平面场景的基础矩阵F(4种运动假设)
@@ -1089,7 +1089,7 @@ LocalMap包含：
 
         // 【15】地图点 尺度归一化 Scale points
 	    // 地图点 归一化尺度
-	    vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+	    std::vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
 	    for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
 	    {
 		if(vpAllMapPoints[iMP])
@@ -1175,7 +1175,7 @@ LocalMap包含：
 	    // We perform first an ORB matching with the reference keyframe
 	    // If enough matches are found we setup a PnP solver
 	    ORBmatcher matcher(0.7,true);// orb特征 匹配器   0.7 鲁棒匹配系数
-	    vector<MapPoint*> vpMapPointMatches;
+	    std::vector<MapPoint*> vpMapPointMatches;
 	    
             // 计算 当前帧 和 参考关键帧帧之间的 特征匹配 返回匹配点对个数
 	    // 当前帧 和 参考关键帧 中的地图点  进行特征匹配  匹配到已有地图点
@@ -1243,21 +1243,21 @@ LocalMap包含：
 	    // Create "visual odometry" MapPoints
 	    // We sort points according to their measured depth by the stereo/RGB-D sensor
 	    // 以下 双目/深度相机 执行
-	    vector<pair<float,int> > vDepthIdx;
+	    std::vector<std::pair<float,int> > vDepthIdx;
 	    vDepthIdx.reserve(mLastFrame.N);
 	    for(int i=0; i<mLastFrame.N;i++)
 	    {
 		float z = mLastFrame.mvDepth[i];// 关键点对应的深度
 		if(z>0)
 		{
-		    vDepthIdx.push_back(make_pair(z,i));
+		    vDepthIdx.push_back(std::make_pair(z,i));
 		}
 	    }
 
 	    if(vDepthIdx.empty())
 		return;
 
-	    sort(vDepthIdx.begin(),vDepthIdx.end());//深度排序
+	    std::sort(vDepthIdx.begin(),vDepthIdx.end());//深度排序
 
 	    // We insert all close points (depth < mThDepth)
 	    // If less than 100 close points, we insert the 100 closest ones.
@@ -1521,7 +1521,7 @@ CreateNewKeyFrame()  两个函数来完成。
 	{
 	    // Each map point vote for the keyframes in which it has been observed
 	  // 更新地图点 的 观测帧
-	    map<KeyFrame*,int> keyframeCounter;
+	    std::map<KeyFrame*,int> keyframeCounter;
 	    for(int i=0; i<mCurrentFrame.N; i++)
 	    {
 		if(mCurrentFrame.mvpMapPoints[i])//当前帧 的地图点
@@ -1529,8 +1529,8 @@ CreateNewKeyFrame()  两个函数来完成。
 		    MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
 		    if(!pMP->isBad())// 被观测到
 		    {
-			const map<KeyFrame*,size_t> observations = pMP->GetObservations();
-			for(map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
+			const std::map<KeyFrame*,size_t> observations = pMP->GetObservations();
+			for(std::map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
 			    keyframeCounter[it->first]++;// 地图点的观测帧 观测地图点次数++
 		    }
 		    else
@@ -1550,7 +1550,7 @@ CreateNewKeyFrame()  两个函数来完成。
 	    mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
 
 	    // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
-	    // map<KeyFrame*,int>::const_iterator
+	    // std::map<KeyFrame*,int>::const_iterator
 //  1. 共视化程度高的关键帧 观测到当前帧地图点 次数多的 关键帧；	    
 	    for( auto it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
 	    {
@@ -1568,7 +1568,7 @@ CreateNewKeyFrame()  两个函数来完成。
 	    }
 
 	    // Include also some not-already-included keyframes that are neighbors to already-included keyframes
-	    // vector<KeyFrame*>::const_iterator
+	    // std::vector<KeyFrame*>::const_iterator
 	    // 
 	    for(auto itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
 	    {
@@ -1580,8 +1580,8 @@ CreateNewKeyFrame()  两个函数来完成。
 		KeyFrame* pKF = *itKF;
                 // 根据权重w  二分查找 有序序列 中的某写对象
                 // 返回前 w个 有序关键帧
-		const vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(10);
-		// vector<KeyFrame*>::const_iterator
+		const std::vector<KeyFrame*> vNeighs = pKF->GetBestCovisibilityKeyFrames(10);
+		// std::vector<KeyFrame*>::const_iterator
 		for(auto itNeighKF=vNeighs.begin(), itEndNeighKF=vNeighs.end(); itNeighKF != itEndNeighKF; itNeighKF++)
 		{
 		    KeyFrame* pNeighKF = *itNeighKF;
@@ -1596,8 +1596,8 @@ CreateNewKeyFrame()  两个函数来完成。
 		    }
 		}
   // 2. 子关键帧；
-		const set<KeyFrame*> spChilds = pKF->GetChilds();
-		 // set<KeyFrame*>::const_iterator
+		const std::set<KeyFrame*> spChilds = pKF->GetChilds();
+		 // std::set<KeyFrame*>::const_iterator
 		for(auto sit=spChilds.begin(), send=spChilds.end(); sit!=send; sit++)
 		{
 		    KeyFrame* pChildKF = *sit;
@@ -1642,14 +1642,14 @@ CreateNewKeyFrame()  两个函数来完成。
 	void Tracking::UpdateLocalPoints()
 	{
 	    mvpLocalMapPoints.clear();
-	    // vector<KeyFrame*>::const_iterator
+	    // std::vector<KeyFrame*>::const_iterator
 	    for(auto itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
 	    {
 		KeyFrame* pKF = *itKF;// 每一个 局部关键帧
 		// 局部关键帧的地图点
-		const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
+		const std::vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
 		//  每一个 局部关键帧 的地图点 
-		// vector<MapPoint*>::const_iterator
+		// std::vector<MapPoint*>::const_iterator
 		for( auto itMP=vpMPs.begin(), itEndMP=vpMPs.end(); itMP!=itEndMP; itMP++)
 		{
 		    MapPoint* pMP = *itMP;//每一个 局部地图点 
@@ -1821,21 +1821,21 @@ CreateNewKeyFrame()  两个函数来完成。
 		// 双目 / 深度
      // 步骤3.1：得到当前帧深度小于阈值的特征点
                // 创建新的MapPoint, depth < mThDepth
-		vector<pair<float,int> > vDepthIdx;
+		std::vector<std::pair<float,int> > vDepthIdx;
 		vDepthIdx.reserve(mCurrentFrame.N);
 		for(int i=0; i<mCurrentFrame.N; i++)
 		{
 		    float z = mCurrentFrame.mvDepth[i];
 		    if(z>0)
 		    {
-			vDepthIdx.push_back(make_pair(z,i));
+			vDepthIdx.push_back(std::make_pair(z,i));
 		    }
 		}
 
 		if(!vDepthIdx.empty())
 		{
 	         // 步骤3.2：按照深度从小到大排序  
-		    sort(vDepthIdx.begin(),vDepthIdx.end());
+		    std::sort(vDepthIdx.begin(),vDepthIdx.end());
                  // 步骤3.3：将距离比较近的点包装成MapPoints
 		    int nPoints = 0;
 		    for(size_t j=0; j<vDepthIdx.size();j++)
@@ -1904,7 +1904,7 @@ CreateNewKeyFrame()  两个函数来完成。
 	    // Do not search map points already matched
 // 步骤1：遍历当前帧的mvpMapPoints，标记这些MapPoints不参与之后的搜索
            // 因为当前的mvpMapPoints一定在当前帧的视野中
-	    for(vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit !=vend; vit++)
+	    for(std::vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit !=vend; vit++)
 	    {
 		MapPoint* pMP = *vit;// 当前帧的地图点
 		if(pMP)
@@ -1926,7 +1926,7 @@ CreateNewKeyFrame()  两个函数来完成。
 
 	    // Project points in frame and check its visibility
 // 步骤2：将所有局部MapPoints投影到当前帧，判断是否在视野范围内，然后进行投影匹配    
-	    for(vector<MapPoint*>::iterator vit=mvpLocalMapPoints.begin(), vend=mvpLocalMapPoints.end(); vit!=vend; vit++)
+	    for(std::vector<MapPoint*>::iterator vit=mvpLocalMapPoints.begin(), vend=mvpLocalMapPoints.end(); vit!=vend; vit++)
 	    {
 		MapPoint* pMP = *vit;// 局部地图的 每一个地图点   
 		// 已经被当前帧观测到MapPoint不再判断是否能被当前帧观测到
@@ -1995,7 +1995,7 @@ CreateNewKeyFrame()  两个函数来完成。
  // 2. 在关键帧数据库中找到相似的候选关键帧；
            // 计算帧描述子 词典单词线性 表示的 词典单词向量
            // 和 关键帧数据库中 每个关键帧的线性表示向量 求距离 距离最近的一些帧 为 候选关键帧  
-	    vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+	    std::vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
 	    if(vpCandidateKFs.empty())
 		return false;
 	    const int nKFs = vpCandidateKFs.size();// 总的候选关键帧
@@ -2003,13 +2003,13 @@ CreateNewKeyFrame()  两个函数来完成。
 	    // We perform first an ORB matching with each candidate
 	    // If enough matches are found we setup a PnP solver
 	    ORBmatcher matcher(0.75,true);// 描述子匹配器   最小距离 < 0.75*次短距离
-	    vector<PnPsolver*> vpPnPsolvers;//两关键帧之间的匹配点  Rt 求解器
+	    std::vector<PnPsolver*> vpPnPsolvers;//两关键帧之间的匹配点  Rt 求解器
 	    vpPnPsolvers.resize(nKFs);// 当前帧 和 每个候选关键帧 都有一个 求解器
-	    vector<vector<MapPoint*> > vvpMapPointMatches;
+	    std::vector<std::vector<MapPoint*> > vvpMapPointMatches;
 	    // 当前帧 的关键点描述子 和 每个候选关键帧地图点 描述子的匹配点
 	    
 	    vvpMapPointMatches.resize(nKFs);//两个关键帧之间的 地图点匹配
-	    vector<bool> vbDiscarded;// 候选关键帧与当前帧匹配 好坏 标志
+	    std::vector<bool> vbDiscarded;// 候选关键帧与当前帧匹配 好坏 标志
 	    vbDiscarded.resize(nKFs);
 
 	    int nCandidates=0;
@@ -2054,7 +2054,7 @@ CreateNewKeyFrame()  两个函数来完成。
 			continue;
 
 		    // Perform 5 Ransac Iterations   5次 随机采样序列 求解位姿  Tcw 
-		    vector<bool> vbInliers;// 符合变换的 内点个数
+		    std::vector<bool> vbInliers;// 符合变换的 内点个数
 		    int nInliers;
 		    bool bNoMore;
            //求解器求解 进行EPnP求解
@@ -2074,7 +2074,7 @@ CreateNewKeyFrame()  两个函数来完成。
 		    {
 			Tcw.copyTo(mCurrentFrame.mTcw);
 
-			set<MapPoint*> sFound;// 地图点
+			std::set<MapPoint*> sFound;// 地图点
 
 			const int np = vbInliers.size();// 符合 位姿  Tcw  的 内点数量
 
@@ -2211,7 +2211,7 @@ CreateNewKeyFrame()  两个函数来完成。
 // 相机内参数
 // 畸变校正参数
 // 基线长度 × 焦距
-	void Tracking::ChangeCalibration(const string &strSettingPath)
+	void Tracking::ChangeCalibration(const std::string &strSettingPath)
 	{
 	    cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
 	    float fx = fSettings["Camera.fx"];

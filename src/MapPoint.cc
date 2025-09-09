@@ -26,7 +26,7 @@ namespace ORB_SLAM2
 {
 
 	long unsigned int MapPoint::nNextId=0;
-	mutex MapPoint::mGlobalMutex;// 全局 线程锁
+	std::mutex MapPoint::mGlobalMutex;// 全局 线程锁
 
 	// 创建关键帧地图点   世界坐标点     所属关键帧    所属地图
 	// 参考帧是关键帧，该地图点将于许多帧关键帧对应，建立关键帧之间的共视关系
@@ -40,7 +40,7 @@ namespace ORB_SLAM2
 	    mNormalVector = cv::Mat::zeros(3,1,CV_32F);
 
 	    // MapPoints can be created from Tracking and Local Mapping. This mutex avoid conflicts with id.
-	    unique_lock<mutex> lock(mpMap->mMutexPointCreation);
+	    std::unique_lock<std::mutex> lock(mpMap->mMutexPointCreation);
 	    mnId=nNextId++;
 	}
 
@@ -69,32 +69,32 @@ namespace ORB_SLAM2
 	    pFrame->mDescriptors.row(idxF).copyTo(mDescriptor);// 描述子
 
 	    // MapPoints can be created from Tracking and Local Mapping. This mutex avoid conflicts with id.
-	    unique_lock<mutex> lock(mpMap->mMutexPointCreation);
+	    std::unique_lock<std::mutex> lock(mpMap->mMutexPointCreation);
 	    mnId=nNextId++;
 	}
 
 	void MapPoint::SetWorldPos(const cv::Mat &Pos)
 	{
-	    unique_lock<mutex> lock2(mGlobalMutex);
-	    unique_lock<mutex> lock(mMutexPos);
+	    std::unique_lock<std::mutex> lock2(mGlobalMutex);
+	    std::unique_lock<std::mutex> lock(mMutexPos);
 	    Pos.copyTo(mWorldPos);
 	}
 
 	cv::Mat MapPoint::GetWorldPos()
 	{
-	    unique_lock<mutex> lock(mMutexPos);
+	    std::unique_lock<std::mutex> lock(mMutexPos);
 	    return mWorldPos.clone();// 复制
 	}
 
 	cv::Mat MapPoint::GetNormal()
 	{
-	    unique_lock<mutex> lock(mMutexPos);
+	    std::unique_lock<std::mutex> lock(mMutexPos);
 	    return mNormalVector.clone();// 点 相对于 相机光心坐标 
 	}
 
 	KeyFrame* MapPoint::GetReferenceKeyFrame()
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    return mpRefKF;// 地图点的 参考帧
 	}
 
@@ -103,7 +103,7 @@ namespace ORB_SLAM2
 	// 添加地图点观测帧：能够观测到同一个地图点的关键帧之间存在共视关系
 	void MapPoint::AddObservation(KeyFrame* pKF, size_t idx)
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    if(mObservations.count(pKF))// pKF已经出现了
 		return;
 	    mObservations[pKF]=idx;// 还没有   则添加 观测关键帧
@@ -127,7 +127,7 @@ namespace ORB_SLAM2
 	{
 	    bool bBad=false;
 	    {
-		unique_lock<mutex> lock(mMutexFeatures);
+		std::unique_lock<std::mutex> lock(mMutexFeatures);
 		if(mObservations.count(pKF))
 		{
 	 // 从当前地图点的 mObservation 和 nObs 成员中删掉对应关键帧观测关系	  
@@ -153,16 +153,16 @@ namespace ORB_SLAM2
 	}
 	
 // 得到该地图点的 观测帧
-	map<KeyFrame*, size_t> MapPoint::GetObservations()
+	std::map<KeyFrame*, size_t> MapPoint::GetObservations()
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    return mObservations;
 	}
 	
 // 返回该点被观测到 的次数
 	int MapPoint::Observations()
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    return nObs;
 	}
 
@@ -171,15 +171,15 @@ namespace ORB_SLAM2
 	// 删除在 观测帧 内 的 与改地图点相关的匹配点对
 	void MapPoint::SetBadFlag()
 	{
-	    map<KeyFrame*,size_t> obs;
+	    std::map<KeyFrame*,size_t> obs;
 	    {
-		unique_lock<mutex> lock1(mMutexFeatures);
-		unique_lock<mutex> lock2(mMutexPos);
+		std::unique_lock<std::mutex> lock1(mMutexFeatures);
+		std::unique_lock<std::mutex> lock2(mMutexPos);
 		mbBad=true;
 		obs = mObservations;// 保存改点对应的 观测帧
 		mObservations.clear();// 清除观测帧
 	    }
-	    // map<KeyFrame*,size_t>::iterator mit 
+	    // std::map<KeyFrame*,size_t>::iterator mit 
 	    for(auto mit = obs.begin(), mend=obs.end(); mit!=mend; mit++)
 	    {
 		KeyFrame* pKF = mit->first;// 关键帧 指针
@@ -192,8 +192,8 @@ namespace ORB_SLAM2
 	// 代替点
 	MapPoint* MapPoint::GetReplaced()
 	{
-	    unique_lock<mutex> lock1(mMutexFeatures);
-	    unique_lock<mutex> lock2(mMutexPos);
+	    std::unique_lock<std::mutex> lock1(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock2(mMutexPos);
 	    return mpReplaced;
 	}
 	
@@ -207,10 +207,10 @@ namespace ORB_SLAM2
 		return;
 
 	    int nvisible, nfound;
-	    map<KeyFrame*,size_t> obs;
+	    std::map<KeyFrame*,size_t> obs;
 	    {
-		unique_lock<mutex> lock1(mMutexFeatures);
-		unique_lock<mutex> lock2(mMutexPos);
+		std::unique_lock<std::mutex> lock1(mMutexFeatures);
+		std::unique_lock<std::mutex> lock2(mMutexPos);
 		obs=mObservations;// 本点 所有的 观测帧
 		mObservations.clear();// 清空 观测帧 指针
 		mbBad=true;//坏点
@@ -218,7 +218,7 @@ namespace ORB_SLAM2
 		nfound = mnFound;// 跟踪到 次数？
 		mpReplaced = pMP;
 	    }
-	// map<KeyFrame*,size_t>::iterator mit
+	// std::map<KeyFrame*,size_t>::iterator mit
 	    for( auto mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)//对于 原来点的所有观测帧 检测与替代点关系 
 	    {
 		// Replace measurement in keyframe
@@ -246,22 +246,22 @@ namespace ORB_SLAM2
 	// 已经被观测到
 	bool MapPoint::isBad()
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
-	    unique_lock<mutex> lock2(mMutexPos);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock2(mMutexPos);
 	    return mbBad;
 	}
 
 	// 可观测到次数 +n
 	void MapPoint::IncreaseVisible(int n)
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    mnVisible+=n;
 	}
 
 	// 可跟踪到次数 +n
 	void MapPoint::IncreaseFound(int n)
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    mnFound+=n;
 	}
 
@@ -271,7 +271,7 @@ namespace ORB_SLAM2
 // 通常来说，found的地图点一定是visible的，但是visible的地图点很可能not found
 	float MapPoint::GetFoundRatio()
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    return static_cast<float>(mnFound)/mnVisible;
 	}
 
@@ -284,9 +284,9 @@ namespace ORB_SLAM2
 	void MapPoint::ComputeDistinctiveDescriptors()
 	{
 	// 所有观测帧------------------------------
-	    map<KeyFrame*,size_t> observations;
+	    std::map<KeyFrame*,size_t> observations;
 	    {
-		unique_lock<mutex> lock1(mMutexFeatures);
+		std::unique_lock<std::mutex> lock1(mMutexFeatures);
 		if(mbBad)
 		    return;
 		observations=mObservations;// 所有观测帧
@@ -295,9 +295,9 @@ namespace ORB_SLAM2
 		return;
 	// 所有 描述子----------------------
 	      // Retrieve all observed descriptors
-	    vector<cv::Mat> vDescriptors;//该地图点 在 所有 观测帧 上的 描述子 集合   
+	    std::vector<cv::Mat> vDescriptors;//该地图点 在 所有 观测帧 上的 描述子 集合   
 	    vDescriptors.reserve(observations.size());   
-	    // map<KeyFrame*,size_t>::iterator mit
+	    // std::map<KeyFrame*,size_t>::iterator mit
 	    for( auto mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
 	    {
 		KeyFrame* pKF = mit->first;
@@ -329,8 +329,8 @@ namespace ORB_SLAM2
 	    int BestIdx = 0;
 	    for(size_t i=0;i<N;i++)
 	    {
-		vector<int> vDists(Distances[i],Distances[i]+N);//每个描述子 和其他描述子之间的距离
-		sort(vDists.begin(),vDists.end());// 排序
+		std::vector<int> vDists(Distances[i],Distances[i]+N);//每个描述子 和其他描述子之间的距离
+		std::sort(vDists.begin(),vDists.end());// 排序
 		int median = vDists[0.5*(N-1)];// 中值距离
 		if(median<BestMedian)
 		{
@@ -340,7 +340,7 @@ namespace ORB_SLAM2
 	    }
 	// 最小中值距离  对于对应的 描述子
 	    {
-		unique_lock<mutex> lock(mMutexFeatures);
+		std::unique_lock<std::mutex> lock(mMutexFeatures);
 		mDescriptor = vDescriptors[BestIdx].clone();// 和其他描述子最想的 描述子
 	    }
 	}
@@ -348,14 +348,14 @@ namespace ORB_SLAM2
 	// 得到地图点  在 所有观测帧中的 最具代表性的 描述子
 	cv::Mat MapPoint::GetDescriptor()
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    return mDescriptor.clone();
 	}
 
 	// 返回 给定帧 在 该地图点 的 观测帧集合中的 位置（）
 	int MapPoint::GetIndexInKeyFrame(KeyFrame *pKF)
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    if(mObservations.count(pKF))// 找该关键帧 在 观测关键帧集合 中的位置
 		return mObservations[pKF];
 	    else
@@ -365,7 +365,7 @@ namespace ORB_SLAM2
 	// 给定关键帧 是否在 该点的 观测帧集合内
 	bool MapPoint::IsInKeyFrame(KeyFrame *pKF)
 	{
-	    unique_lock<mutex> lock(mMutexFeatures);
+	    std::unique_lock<std::mutex> lock(mMutexFeatures);
 	    return (mObservations.count(pKF));
 	}
 	
@@ -375,12 +375,12 @@ namespace ORB_SLAM2
 // 该地图点平均观测方向与观测距离的范围，这些都是为了后面做描述子融合做准备。	
 	void MapPoint::UpdateNormalAndDepth()
 	{
-	    map<KeyFrame*,size_t> observations;// 观测帧 多帧
+	    std::map<KeyFrame*,size_t> observations;// 观测帧 多帧
 	    KeyFrame* pRefKF;//参考关键帧   只有一帧 
 	    cv::Mat Pos;//世界 3D坐标
 	    {
-		unique_lock<mutex> lock1(mMutexFeatures);
-		unique_lock<mutex> lock2(mMutexPos);
+		std::unique_lock<std::mutex> lock1(mMutexFeatures);
+		std::unique_lock<std::mutex> lock2(mMutexPos);
 		if(mbBad)
 		    return;
 		observations=mObservations;// 地图点 观测帧
@@ -393,7 +393,7 @@ namespace ORB_SLAM2
  // 【1】更新观测方向  计算 3D世界 地图点 在 各个观测帧 相机下 的 相对相机中的 的 单位化 相对坐标----------------
 	    cv::Mat normal = cv::Mat::zeros(3,1,CV_32F);
 	    int n=0;
-	    // map<KeyFrame*,size_t>::iterator mit
+	    // std::map<KeyFrame*,size_t>::iterator mit
 	    // 地图点到所有观测到的关键帧相机中心向量，归一化后相加。
 	    for(auto mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
 	    {
@@ -413,7 +413,7 @@ namespace ORB_SLAM2
 	    const float levelScaleFactor =  pRefKF->mvScaleFactors[level];// 对应层级下 的尺度因子
 	    const int nLevels = pRefKF->mnScaleLevels;
 	    {
-		unique_lock<mutex> lock3(mMutexPos);
+		std::unique_lock<std::mutex> lock3(mMutexPos);
 		
 		// 乘上参考帧中描述子获取时金字塔放大尺度，得到最大距离mfMaxDistance
 		mfMaxDistance = dist*levelScaleFactor;// 原来的距离 在 对于层级尺度下的 距离
@@ -426,13 +426,13 @@ namespace ORB_SLAM2
 
 	float MapPoint::GetMinDistanceInvariance()
 	{
-	    unique_lock<mutex> lock(mMutexPos);
+	    std::unique_lock<std::mutex> lock(mMutexPos);
 	    return 0.8f*mfMinDistance;// 各个图像金字塔下 的距离 最小距离
 	}
 
 	float MapPoint::GetMaxDistanceInvariance()
 	{
-	    unique_lock<mutex> lock(mMutexPos);
+	    std::unique_lock<std::mutex> lock(mMutexPos);
 	    return 1.2f*mfMaxDistance;// 各个图像金字塔下 的距离 最大距离
 	}
 
@@ -449,7 +449,7 @@ namespace ORB_SLAM2
 	{
 	    float ratio;
 	    {
-		unique_lock<mutex> lock(mMutexPos);
+		std::unique_lock<std::mutex> lock(mMutexPos);
 		ratio = mfMaxDistance/currentDist;//当前特征点的距离
 	    }
 
@@ -466,7 +466,7 @@ namespace ORB_SLAM2
 	{
 	    float ratio;
 	    {
-		unique_lock<mutex> lock(mMutexPos);
+		std::unique_lock<std::mutex> lock(mMutexPos);
 		ratio = mfMaxDistance/currentDist;
 	    }
 

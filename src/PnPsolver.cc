@@ -43,7 +43,7 @@
 #include <vector>
 #include <cmath>
 #include <opencv2/core/core.hpp>
-#include "Thirdparty/DBoW2/DUtils/Random.h"
+#include "DUtils/Random.h"
 #include <algorithm>
 
 using namespace std;
@@ -55,7 +55,7 @@ namespace ORB_SLAM2
 // pws表示3D点在世界坐标系下的坐标
 // us表示图像坐标系下的2D点坐标
 // alphas为真实3D点用4个虚拟控制点表达时的系数
-PnPsolver::PnPsolver(const Frame &F, const vector<MapPoint*> &vpMapPointMatches):
+PnPsolver::PnPsolver(const Frame &F, const std::vector<MapPoint*> &vpMapPointMatches):
     pws(0), us(0), alphas(0), pcs(0), maximum_number_of_correspondences(0), number_of_correspondences(0), mnInliersi(0),
     mnIterations(0), mnBestInliers(0), N(0)
 {
@@ -142,20 +142,20 @@ void PnPsolver::SetRansacParameters(double probability, int minInliers, int maxI
     else
         nIterations = ceil(log(1-mRansacProb)/log(1-pow(mRansacEpsilon,3)));
 
-    mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
+    mRansacMaxIts = std::max(1,std::min(nIterations,mRansacMaxIts));
 
     mvMaxError.resize(mvSigma2.size());// 图像提取特征的时候尺度层数
     for(size_t i=0; i<mvSigma2.size(); i++)// 不同的尺度，设置不同的最大偏差
         mvMaxError[i] = mvSigma2[i]*th2;
 }
 
-cv::Mat PnPsolver::find(vector<bool> &vbInliers, int &nInliers)
+cv::Mat PnPsolver::find(std::vector<bool> &vbInliers, int &nInliers)
 {
     bool bFlag;
     return iterate(mRansacMaxIts,bFlag,vbInliers,nInliers);    
 }
 
-cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers)
+cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, std::vector<bool> &vbInliers, int &nInliers)
 {
     bNoMore = false;
     vbInliers.clear();
@@ -173,7 +173,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
     
     // mvAllIndices为所有参与PnP的2D点的索引
     // vAvailableIndices为每次从mvAllIndices中随机挑选mRansacMinSet组3D-2D对应点进行一次RANSAC
-    vector<size_t> vAvailableIndices;
+    std::vector<size_t> vAvailableIndices;
 
     int nCurrentIterations = 0;
     while(mnIterations<mRansacMaxIts || nCurrentIterations<nIterations)
@@ -223,7 +223,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
             if(Refine())
             {
                 nInliers = mnRefinedInliers;
-                vbInliers = vector<bool>(mvpMapPointMatches.size(),false);
+                vbInliers = std::vector<bool>(mvpMapPointMatches.size(),false);
                 for(int i=0; i<N; i++)
                 {
                     if(mvbRefinedInliers[i])
@@ -241,7 +241,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
         if(mnBestInliers>=mRansacMinInliers)
         {
             nInliers=mnBestInliers;
-            vbInliers = vector<bool>(mvpMapPointMatches.size(),false);
+            vbInliers = std::vector<bool>(mvpMapPointMatches.size(),false);
             for(int i=0; i<N; i++)
             {
                 if(mvbBestInliers[i])
@@ -256,7 +256,7 @@ cv::Mat PnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInlie
 
 bool PnPsolver::Refine()
 {
-    vector<int> vIndices;
+    std::vector<int> vIndices;
     vIndices.reserve(mvbBestInliers.size());
 
     for(size_t i=0; i<mvbBestInliers.size(); i++)
@@ -405,7 +405,7 @@ void PnPsolver::choose_control_points(void)
   // 类似于齐次线性最小二乘求解的过程，
   // PW0的转置乘以PW0
   cvMulTransposed(PW0, &PW0tPW0, 1);
-  cvSVD(&PW0tPW0, &DC, &UCt, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
+  cvSVD(&PW0tPW0, &DC, &UCt, 0, cv::SVD::MODIFY_A | cv::SVD::U_T);
 
   cvReleaseMat(&PW0);
 // 步骤2.3：得到C1, C2, C3三个3D控制点，最后加上之前减掉的第一个控制点这个偏移量
@@ -442,7 +442,7 @@ void PnPsolver::compute_barycentric_coordinates(void)
     for(int j = 1; j < 4; j++)
       cc[3 * i + j - 1] = cws[j][i] - cws[0][i];
 
-  cvInvert(&CC, &CC_inv, CV_SVD);
+  cvInvert(&CC, &CC_inv, cv::SVD);
   double * ci = cc_inv;
   for(int i = 0; i < number_of_correspondences; i++) {
     double * pi = pws + 3 * i;// pi指向第i个3D点的首地址
@@ -529,7 +529,7 @@ double PnPsolver::compute_pose(double R[3][3], double t[3])
   // 步骤3：求解Mx = 0
   // SVD分解M'M
   cvMulTransposed(M, &MtM, 1);
-  cvSVD(&MtM, &D, &Ut, 0, CV_SVD_MODIFY_A | CV_SVD_U_T);
+  cvSVD(&MtM, &D, &Ut, 0, cv::SVD::MODIFY_A | cv::SVD::U_T);
   cvReleaseMat(&M);
 
   double l_6x10[6 * 10], rho[6];
@@ -652,7 +652,7 @@ void PnPsolver::estimate_R_and_t(double R[3][3], double t[3])
     }
   }
 
-  cvSVD(&ABt, &ABt_D, &ABt_U, &ABt_V, CV_SVD_MODIFY_A);
+  cvSVD(&ABt, &ABt_D, &ABt_U, &ABt_V, cv::SVD::MODIFY_A);
 
   for(int i = 0; i < 3; i++)
     for(int j = 0; j < 3; j++)
@@ -725,7 +725,7 @@ void PnPsolver::find_betas_approx_1(const CvMat * L_6x10, const CvMat * Rho,
     cvmSet(&L_6x4, i, 3, cvmGet(L_6x10, i, 6));
   }
 
-  cvSolve(&L_6x4, Rho, &B4, CV_SVD);
+  cvSolve(&L_6x4, Rho, &B4, cv::SVD);
 
   if (b4[0] < 0) {
     betas[0] = sqrt(-b4[0]);
@@ -756,7 +756,7 @@ void PnPsolver::find_betas_approx_2(const CvMat * L_6x10, const CvMat * Rho,
     cvmSet(&L_6x3, i, 2, cvmGet(L_6x10, i, 2));
   }
 
-  cvSolve(&L_6x3, Rho, &B3, CV_SVD);
+  cvSolve(&L_6x3, Rho, &B3, cv::SVD);
 
   if (b3[0] < 0) {
     betas[0] = sqrt(-b3[0]);
@@ -790,7 +790,7 @@ void PnPsolver::find_betas_approx_3(const CvMat * L_6x10, const CvMat * Rho,
     cvmSet(&L_6x5, i, 4, cvmGet(L_6x10, i, 4));
   }
 
-  cvSolve(&L_6x5, Rho, &B5, CV_SVD);
+  cvSolve(&L_6x5, Rho, &B5, cv::SVD);
 
   if (b5[0] < 0) {
     betas[0] = sqrt(-b5[0]);
@@ -1020,7 +1020,7 @@ void PnPsolver::relative_error(double & rot_err, double & transl_err,
 			 (qtrue[3] + qest[3]) * (qtrue[3] + qest[3]) ) /
     sqrt(qtrue[0] * qtrue[0] + qtrue[1] * qtrue[1] + qtrue[2] * qtrue[2] + qtrue[3] * qtrue[3]);
 
-  rot_err = min(rot_err1, rot_err2);
+  rot_err = std::min(rot_err1, rot_err2);
 
   transl_err =
     sqrt((ttrue[0] - test[0]) * (ttrue[0] - test[0]) +

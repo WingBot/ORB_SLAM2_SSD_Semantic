@@ -19,7 +19,7 @@ namespace ORB_SLAM2
 // THIS IS THE INITIALIZER FOR MONOCULAR SLAM. NOT USED IN THE STEREO OR RGBD CASE.
 class Initializer
 {
-    typedef pair<int,int> Match;// pair  键值对 
+    typedef std::pair<int,int> Match;// pair  键值对 
 
 public:
 
@@ -33,32 +33,32 @@ public:
     // Xc = H * Xr               p2转置 * F * p1 = 0
     // Selects a model and tries to recover the motion and the structure from motion
     // 选择一种方法 恢复 运动
-    bool Initialize(const Frame &CurrentFrame, const vector<int> &vMatches12,
-                    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated);
+    bool Initialize(const Frame &CurrentFrame, const std::vector<int> &vMatches12,
+                    cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated);
 
 
 private:
    // 计算单应矩阵 H  随机采样8点对 调用 ComputeH21计算单应  CheckHomography 计算得分  迭代求 得分最高的 H
-    void FindHomography(vector<bool> &vbMatchesInliers, float &score, cv::Mat &H21);
+    void FindHomography(std::vector<bool> &vbMatchesInliers, float &score, cv::Mat &H21);
    // 计算基础矩阵 F  随机采样8点对 调用 ComputeF21计算基础矩阵  CheckFundamental 计算得分 迭代求 得分最高的 F
-    void FindFundamental(vector<bool> &vbInliers, float &score, cv::Mat &F21);
+    void FindFundamental(std::vector<bool> &vbInliers, float &score, cv::Mat &F21);
    // 计算单应矩阵 H
-    cv::Mat ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
+    cv::Mat ComputeH21(const std::vector<cv::Point2f> &vP1, const std::vector<cv::Point2f> &vP2);
     // 计算基础矩阵 F
-    cv::Mat ComputeF21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2);
+    cv::Mat ComputeF21(const std::vector<cv::Point2f> &vP1, const std::vector<cv::Point2f> &vP2);
     // 计算单应矩阵 得分
-    float CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma);
+    float CheckHomography(const cv::Mat &H21, const cv::Mat &H12, std::vector<bool> &vbMatchesInliers, float sigma);
     // 计算 基础矩阵 得分
-    float CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma);
+    float CheckFundamental(const cv::Mat &F21, std::vector<bool> &vbMatchesInliers, float sigma);
 
     
     // 基础矩阵 恢复  R  t -----F ----> 本质矩阵E 从本质矩阵恢复  R  t
-    bool ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv::Mat &K,
-                      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
+    bool ReconstructF(std::vector<bool> &vbMatchesInliers, cv::Mat &F21, cv::Mat &K,
+                      cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
 
     // 单应矩阵  恢复  R  t 
-    bool ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv::Mat &K,
-                      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
+    bool ReconstructH(std::vector<bool> &vbMatchesInliers, cv::Mat &H21, cv::Mat &K,
+                      cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated, float minParallax, int minTriangulated);
 
     // 三角化计算 深度 获取3D点坐标
     /*
@@ -85,27 +85,27 @@ private:
     // 标准化点坐标
     // 标准化矩阵  * 点坐标    =   标准化后的的坐标              去均值点坐标 * 绝对矩倒数
    //  点坐标    =    标准化矩阵 逆矩阵 * 标准化后的的坐标
-    void Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2f> &vNormalizedPoints, cv::Mat &T);
+    void Normalize(const std::vector<cv::KeyPoint> &vKeys, std::vector<cv::Point2f> &vNormalizedPoints, cv::Mat &T);
 
     // 检查 R t
-    int CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::KeyPoint> &vKeys1, const vector<cv::KeyPoint> &vKeys2,
-                       const vector<Match> &vMatches12, vector<bool> &vbInliers,
-                       const cv::Mat &K, vector<cv::Point3f> &vP3D, float th2, vector<bool> &vbGood, float &parallax);
+    int CheckRT(const cv::Mat &R, const cv::Mat &t, const std::vector<cv::KeyPoint> &vKeys1, const std::vector<cv::KeyPoint> &vKeys2,
+                       const std::vector<Match> &vMatches12, std::vector<bool> &vbInliers,
+                       const cv::Mat &K, std::vector<cv::Point3f> &vP3D, float th2, std::vector<bool> &vbGood, float &parallax);
     // 从本质矩阵 恢复 R t
     // E = t^R = U C  V   ,U   V 为正交矩阵   C 为奇异值矩阵 C =  diag(1, 1, 0)
     void DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat &t);
 
 
     // Keypoints from Reference Frame (Frame 1)
-    vector<cv::KeyPoint> mvKeys1;
+    std::vector<cv::KeyPoint> mvKeys1;
 
     // Keypoints from Current Frame (Frame 2)
-    vector<cv::KeyPoint> mvKeys2;
+    std::vector<cv::KeyPoint> mvKeys2;
 
     // Current Matches from Reference to Current
     // 参考帧和当前帧的匹配点对
-    vector<Match> mvMatches12;// 当前帧(2)  关键点 的匹配信息
-    vector<bool> mvbMatched1;// 匹配参考帧(1)关键点的匹配信息
+    std::vector<Match> mvMatches12;// 当前帧(2)  关键点 的匹配信息
+    std::vector<bool> mvbMatched1;// 匹配参考帧(1)关键点的匹配信息
 
     // Calibration 相机内参数
     cv::Mat mK;
@@ -118,7 +118,7 @@ private:
    //  基础矩阵F(随机采样序列 8点法求解) 和 单应矩阵计算(随机采样序列 4点法求解)  相机运动
    
     // Ransac sets  随机点对序列
-    vector<vector<size_t> > mvSets;   
+    std::vector<std::vector<size_t> > mvSets;   
 
 };
 

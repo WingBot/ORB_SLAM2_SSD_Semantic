@@ -181,12 +181,12 @@
 
 #include "Initializer.h"
 
-#include "Thirdparty/DBoW2/DUtils/Random.h"
+#include "DUtils/Random.h"
 
 #include "Optimizer.h"
 #include "ORBmatcher.h"
 
-#include<thread>
+#include<std::thread>
 
 namespace ORB_SLAM2
 {
@@ -219,8 +219,8 @@ namespace ORB_SLAM2
  * @param vP3D                  恢复出的3D点
  * @param vbTriangulated 符合三角变换 的 3D点
  */
-	bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatches12, cv::Mat &R21, cv::Mat &t21,
-				    vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated)
+	bool Initializer::Initialize(const Frame &CurrentFrame, const std::vector<int> &vMatches12, cv::Mat &R21, cv::Mat &t21,
+				    std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated)
 	{
 	    // Fill structures with current keypoints and matches with reference frame
 	    // Reference Frame: 1,  Current Frame: 2
@@ -238,7 +238,7 @@ namespace ORB_SLAM2
 	    {
 		if(vMatches12[i]>=0)// 帧2特征点 有匹配
 		{
-		    mvMatches12.push_back(make_pair(i,vMatches12[i]));
+		    mvMatches12.push_back(std::make_pair(i,vMatches12[i]));
 		    mvbMatched1[i]=true;
 		}
 		else
@@ -249,9 +249,9 @@ namespace ORB_SLAM2
 	    const int N = mvMatches12.size();// 有效的 匹配点对 个数
 	    
             // 新建一个容器vAllIndices，生成0到N-1的数作为特征点的索引
-	    vector<size_t> vAllIndices;
+	    std::vector<size_t> vAllIndices;
 	    vAllIndices.reserve(N);
-	    vector<size_t> vAvailableIndices;
+	    std::vector<size_t> vAvailableIndices;
 
 	    for(int i=0; i<N; i++)
 	    {
@@ -263,7 +263,7 @@ namespace ORB_SLAM2
 	    // 用于FindHomography和FindFundamental求解
 	    // mMaxIterations:200	    
 	    // 随机采样序列 最大迭代次数 随机序列 8点法 
-	    mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(8,0));
+	    mvSets = std::vector< std::vector<size_t> >(mMaxIterations,std::vector<size_t>(8,0));
 
 	    DUtils::Random::SeedRandOnce(0);//随机数
 
@@ -290,13 +290,13 @@ namespace ORB_SLAM2
 // 步骤3：调用多线程分别用于计算fundamental matrix和homography
 	    // Launch threads to compute in parallel a fundamental matrix and a homography
 	    // 启动两个线程 分别计算 基本矩阵 F 和 单应矩阵
-	    vector<bool> vbMatchesInliersH, vbMatchesInliersF;//内点标志  匹配点对是否在 计算出的 变换矩阵的 有效映射上
+	    std::vector<bool> vbMatchesInliersH, vbMatchesInliersF;//内点标志  匹配点对是否在 计算出的 变换矩阵的 有效映射上
 	    float SH, SF;// 最优变换矩阵 对应的 得分
 	    cv::Mat H, F;//随机采样中计算得到 的 最优单应矩阵 H  和 基本矩阵 F
 	    // 计算 单应矩阵 homograpy 并打分
-	    thread threadH(&Initializer::FindHomography,this,ref(vbMatchesInliersH), ref(SH), ref(H));
+	    std::thread threadH(&Initializer::FindHomography,this,ref(vbMatchesInliersH), ref(SH), ref(H));
 	    // 计算 基础矩阵 fundamental matrix并打分
-	    thread threadF(&Initializer::FindFundamental,this,ref(vbMatchesInliersF), ref(SF), ref(F));
+	    std::thread threadF(&Initializer::FindFundamental,this,ref(vbMatchesInliersF), ref(SF), ref(F));
 
 	    // Wait until both threads have finished
 	    // 等待两个线程结束
@@ -327,7 +327,7 @@ namespace ORB_SLAM2
  * @param score                         变换得分
  * @param H21                           单应矩阵
  */
-	void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, cv::Mat &H21)
+	void Initializer::FindHomography(std::vector<bool> &vbMatchesInliers, float &score, cv::Mat &H21)
 	{
 	    // Number of putative matches
 	    const int N = mvMatches12.size();// 2中匹配的1中的点对 匹配点对总数
@@ -337,7 +337,7 @@ namespace ORB_SLAM2
 	    //标准化矩阵  * 点坐标    =   标准化后的的坐标
 	    // 点坐标    =    标准化矩阵 逆矩阵 * 标准化后的的坐标
 	    // Normalize coordinates
-	    vector<cv::Point2f> vPn1, vPn2;// 2d-2d点对
+	    std::vector<cv::Point2f> vPn1, vPn2;// 2d-2d点对
 	    cv::Mat T1, T2;// 标准化矩阵
 	    Normalize(mvKeys1,vPn1, T1);// 标准化点坐标  去均值点坐标 * 绝对矩倒数
 	    Normalize(mvKeys2,vPn2, T2);// 
@@ -346,13 +346,13 @@ namespace ORB_SLAM2
 	    // Best Results variables
 	    // 最终最佳的MatchesInliers与得分
 	    score = 0.0;
-	    vbMatchesInliers = vector<bool>(N,false);// 内点 标志
+	    vbMatchesInliers = std::vector<bool>(N,false);// 内点 标志
 
 	    // Iteration variables
-	    vector<cv::Point2f> vPn1i(8);// 随机 采样 8点对 
-	    vector<cv::Point2f> vPn2i(8);
+	    std::vector<cv::Point2f> vPn1i(8);// 随机 采样 8点对 
+	    std::vector<cv::Point2f> vPn2i(8);
 	    cv::Mat H21i, H12i;// 原点对 的 单应矩阵 //  H21i 原始点    p1 ----------------> p2 的单应
-	    vector<bool> vbCurrentInliers(N,false);//当前随机点里的 内点
+	    std::vector<bool> vbCurrentInliers(N,false);//当前随机点里的 内点
 	    float currentScore;
 	    
 // 步骤2：随机采样序列迭代求解
@@ -402,7 +402,7 @@ namespace ORB_SLAM2
  *
  * 假设场景为非平面情况下通过前两帧求取Fundamental矩阵(current frame 2 到 reference frame 1),并得到该模型的评分
  */
-	void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, cv::Mat &F21)
+	void Initializer::FindFundamental(std::vector<bool> &vbMatchesInliers, float &score, cv::Mat &F21)
 	{
 	    // Number of putative matches
 	  // 总匹配点数
@@ -413,7 +413,7 @@ namespace ORB_SLAM2
  * 点坐标    =    标准化矩阵 逆矩阵 * 标准化后的的坐标
  */
 	    // Normalize coordinates
-	    vector<cv::Point2f> vPn1, vPn2;//  标准化后的的坐标
+	    std::vector<cv::Point2f> vPn1, vPn2;//  标准化后的的坐标
 	    cv::Mat T1, T2;
 	    Normalize(mvKeys1,vPn1, T1);// 标准化 去均值点坐标 * 绝对矩倒数
 	    Normalize(mvKeys2,vPn2, T2);
@@ -421,14 +421,14 @@ namespace ORB_SLAM2
 
 	    // Best Results variables
 	    score = 0.0;
-	    vbMatchesInliers = vector<bool>(N,false);// 最优 基本矩阵变换  对应 的点对的标记  1是 内点  0 是野点
+	    vbMatchesInliers = std::vector<bool>(N,false);// 最优 基本矩阵变换  对应 的点对的标记  1是 内点  0 是野点
 
 	    // Iteration variables
 	    // 随机8对 点对
-	    vector<cv::Point2f> vPn1i(8);
-	    vector<cv::Point2f> vPn2i(8);
+	    std::vector<cv::Point2f> vPn1i(8);
+	    std::vector<cv::Point2f> vPn2i(8);
 	    cv::Mat F21i;
-	    vector<bool> vbCurrentInliers(N,false);//每次迭代 求解的 点对的标记  1是 内点  0 是野点
+	    std::vector<bool> vbCurrentInliers(N,false);//每次迭代 求解的 点对的标记  1是 内点  0 是野点
 	    float currentScore;
  // 【2】随机采样序列迭代求解
 	    // Perform all RANSAC iterations and save the solution with highest score
@@ -489,7 +489,7 @@ namespace ORB_SLAM2
  * @return     单应矩阵
  * @see        Multiple View Geometry in Computer Vision - Algorithm 4.2 p109
  */
-	cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2)
+	cv::Mat Initializer::ComputeH21(const std::vector<cv::Point2f> &vP1, const std::vector<cv::Point2f> &vP2)
 	{
 	    const int N = vP1.size();// 8 点对
 	    cv::Mat A(2*N,9,CV_32F);// 每个点 可以提供两个约束  单应为 3*3 9个 元素
@@ -581,7 +581,7 @@ namespace ORB_SLAM2
  * @return     基础矩阵
  * @see          Multiple View Geometry in Computer Vision - Algorithm 11.1 p282 (中文版 p191)
  */
-	cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::Point2f> &vP2)
+	cv::Mat Initializer::ComputeF21(const std::vector<cv::Point2f> &vP1,const std::vector<cv::Point2f> &vP2)
 	{
 	    const int N = vP1.size();
 
@@ -656,7 +656,7 @@ namespace ORB_SLAM2
  * - Multiple View Geometry in Computer Vision - symmetric transfer errors: 4.2.2 Geometric distance
  * - Multiple View Geometry in Computer Vision - model selection 4.7.1 RANSAC
  */
-	float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma)
+	float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, std::vector<bool> &vbMatchesInliers, float sigma)
 	{   
 	    const int N = mvMatches12.size();// 总匹配点对数量
 	    
@@ -799,7 +799,7 @@ namespace ORB_SLAM2
  * - Multiple View Geometry in Computer Vision - symmetric transfer errors: 4.2.2 Geometric distance
  * - Multiple View Geometry in Computer Vision - model selection 4.7.1 RANSAC
  */
-	float Initializer::CheckFundamental(const cv::Mat &F21, vector<bool> &vbMatchesInliers, float sigma)
+	float Initializer::CheckFundamental(const cv::Mat &F21, std::vector<bool> &vbMatchesInliers, float sigma)
 	{
 	    const int N = mvMatches12.size();
 
@@ -904,8 +904,8 @@ namespace ORB_SLAM2
  * 
  * @see Multiple View Geometry in Computer Vision - Result 9.19 p259
  */	
-	bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv::Mat &K,
-				    cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated)
+	bool Initializer::ReconstructF(std::vector<bool> &vbMatchesInliers, cv::Mat &F21, cv::Mat &K,
+				    cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated, float minParallax, int minTriangulated)
 	{
 	    int N=0;
 	    for(size_t i=0, iend = vbMatchesInliers.size() ; i<iend; i++)
@@ -936,8 +936,8 @@ namespace ORB_SLAM2
 // 步骤3： 恢复四种假设 并验证 Reconstruct with the 4 hyphoteses and check
 	    // 这4个解中只有一个是合理的，可以使用可视化约束来选择，
 	    // 与单应性矩阵做sfm一样的方法，即将4种解都进行三角化，然后从中选择出最合适的解。
-	    vector<cv::Point3f> vP3D1, vP3D2, vP3D3, vP3D4;
-	    vector<bool> vbTriangulated1,vbTriangulated2,vbTriangulated3, vbTriangulated4;
+	    std::vector<cv::Point3f> vP3D1, vP3D2, vP3D3, vP3D4;
+	    std::vector<bool> vbTriangulated1,vbTriangulated2,vbTriangulated3, vbTriangulated4;
 	    float parallax1,parallax2, parallax3, parallax4;
 
 	    int nGood1 = CheckRT(R1,t1,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D1, 4.0*mSigma2, vbTriangulated1, parallax1);
@@ -945,12 +945,12 @@ namespace ORB_SLAM2
 	    int nGood3 = CheckRT(R1,t2,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D3, 4.0*mSigma2, vbTriangulated3, parallax3);
 	    int nGood4 = CheckRT(R2,t2,mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K, vP3D4, 4.0*mSigma2, vbTriangulated4, parallax4);
 
-	    int maxGood = max(nGood1,max(nGood2,max(nGood3,nGood4)));
+	    int maxGood = std::max(nGood1,std::max(nGood2,std::max(nGood3,nGood4)));
 
 	    R21 = cv::Mat();
 	    t21 = cv::Mat();
             // minTriangulated为可以三角化恢复三维点的个数
-	    int nMinGood = max(static_cast<int>(0.9*N),minTriangulated);
+	    int nMinGood = std::max(static_cast<int>(0.9*N),minTriangulated);
 
 	    int nsimilar = 0;
 	    if(nGood1>0.7*maxGood)
@@ -1050,8 +1050,8 @@ T =  K 逆 * H21*K
  * - Faugeras et al, Motion and structure from motion in a piecewise planar environment. International Journal of Pattern Recognition and Artificial Intelligence, 1988.
  * - Deeper understanding of the homography decomposition for vision-based control
  */
-	bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv::Mat &K,
-			      cv::Mat &R21, cv::Mat &t21, vector<cv::Point3f> &vP3D, vector<bool> &vbTriangulated, float minParallax, int minTriangulated)
+	bool Initializer::ReconstructH(std::vector<bool> &vbMatchesInliers, cv::Mat &H21, cv::Mat &K,
+			      cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated, float minParallax, int minTriangulated)
 	{
 	    int N=0;
 	    for(size_t i=0, iend = vbMatchesInliers.size() ; i<iend; i++)
@@ -1082,7 +1082,7 @@ T =  K 逆 * H21*K
 		return false;// 初始化失败
 	    }
 
-	    vector<cv::Mat> vR, vt, vn;
+	    std::vector<cv::Mat> vR, vt, vn;
 	    vR.reserve(8);
 	    vt.reserve(8);
 	    vn.reserve(8);
@@ -1195,8 +1195,8 @@ T =  K 逆 * H21*K
 	    int secondBestGood = 0;    
 	    int bestSolutionIdx = -1;
 	    float bestParallax = -1;
-	    vector<cv::Point3f> bestP3D;
-	    vector<bool> bestTriangulated;
+	    std::vector<cv::Point3f> bestP3D;
+	    std::vector<bool> bestTriangulated;
 
 	    // Instead of applying the visibility constraints proposed in the Faugeras' paper (which could fail for points seen with low parallax)
 	    // We reconstruct all hypotheses and check in terms of triangulated points and parallax
@@ -1204,8 +1204,8 @@ T =  K 逆 * H21*K
 	    for(size_t i=0; i<8; i++)
 	    {
 		float parallaxi;
-		vector<cv::Point3f> vP3Di;
-		vector<bool> vbTriangulatedi;
+		std::vector<cv::Point3f> vP3Di;
+		std::vector<bool> vbTriangulatedi;
 		int nGood = CheckRT(vR[i],vt[i],mvKeys1,mvKeys2,mvMatches12,vbMatchesInliers,K,vP3Di, 4.0*mSigma2, vbTriangulatedi, parallaxi);
                 // 保留最优的和次优的
 		if(nGood>bestGood)
@@ -1353,7 +1353,7 @@ T =  K 逆 * H21*K
  * @param vNormalizedPoints 特征点归一化后的坐标
  * @param T                 将特征点归一化的矩阵
  */
-	void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2f> &vNormalizedPoints, cv::Mat &T)
+	void Initializer::Normalize(const std::vector<cv::KeyPoint> &vKeys, std::vector<cv::Point2f> &vNormalizedPoints, cv::Mat &T)
 	{
 
 	    const int N = vKeys.size();// 点总数
@@ -1422,9 +1422,9 @@ T =  K 逆 * H21*K
 /**
  * @brief 进行cheirality check，从而进一步找出F分解后最合适的解
  */
-	int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::KeyPoint> &vKeys1, const vector<cv::KeyPoint> &vKeys2,
-			      const vector<Match> &vMatches12, vector<bool> &vbMatchesInliers,
-			      const cv::Mat &K, vector<cv::Point3f> &vP3D, float th2, vector<bool> &vbGood, float &parallax)
+	int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const std::vector<cv::KeyPoint> &vKeys1, const std::vector<cv::KeyPoint> &vKeys2,
+			      const std::vector<Match> &vMatches12, std::vector<bool> &vbMatchesInliers,
+			      const cv::Mat &K, std::vector<cv::Point3f> &vP3D, float th2, std::vector<bool> &vbGood, float &parallax)
 	{
 	    // Calibration parameters
 	   // 校正参数
@@ -1433,10 +1433,10 @@ T =  K 逆 * H21*K
 	    const float cx = K.at<float>(0,2);
 	    const float cy = K.at<float>(1,2);
 
-	    vbGood = vector<bool>(vKeys1.size(),false);
+	    vbGood = std::vector<bool>(vKeys1.size(),false);
 	    vP3D.resize(vKeys1.size());// 对应的三维点
 
-	    vector<float> vCosParallax;
+	    std::vector<float> vCosParallax;
 	    vCosParallax.reserve(vKeys1.size());
 
 	    // Camera 1 Projection Matrix K[I|0]
@@ -1546,11 +1546,11 @@ T =  K 逆 * H21*K
 // 步骤8：得到3D点中较大的视差角
 	    if(nGood>0)
 	    {
-		sort(vCosParallax.begin(),vCosParallax.end());// 从小到大排序
+		std::sort(vCosParallax.begin(),vCosParallax.end());// 从小到大排序
 		
 	      // trick! 排序后并没有取最大的视差角
 	      // 取一个较大的视差角
-		size_t idx = min(50,int(vCosParallax.size()-1));
+		size_t idx = std::min(50,int(vCosParallax.size()-1));
 		parallax = acos(vCosParallax[idx])*180/CV_PI;
 	    }
 	    else

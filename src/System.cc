@@ -78,7 +78,7 @@ bool has_suffix(const std::string &str, const std::string &suffix) {
 namespace ORB_SLAM2
 {
 	  // 默认初始化函数  单词表文件 txt/bin文件    配置文件     传感器：单目、双目、深度
-	  System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,const bool bUseViewer):
+	  System::System(const std::string &strVocFile, const std::string &strSettingsFile, const eSensor sensor,const bool bUseViewer):
 			      mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
 			      mbDeactivateLocalizationMode(false)//直接初始化变量
 	  {
@@ -120,13 +120,13 @@ namespace ORB_SLAM2
 	      clock_t tStart = clock();//时间开始
 // 1. 创建字典 mpVocabulary = new ORBVocabulary()；并从文件中载入字典=========================
 	      mpVocabulary = new ORBVocabulary();//关键帧字典数据库
-	      //bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+	      //bool mpVocabulary->load(strVocFile); bVocLoad = true;
 	      bool bVocLoad = false; //  bool量  打开字典flag
-	      if (has_suffix(strVocFile, ".txt"))//
-		    bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);//txt格式打开  
-		    // -> 指针对象 的 解引用和 访问成员函数  相当于  (*mpVocabulary).loadFromTextFile(strVocFile);
-	      else
-		    bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);//bin格式打开
+	      if (has_suffix(strVocFile, ".txt")) {//
+		    mpVocabulary->load(strVocFile); bVocLoad = true;//txt格式打开  
+		    // -> 指针对象 的 解引用和 访问成员函数  相当于  (*mpVocabulary).load(strVocFile);
+	      } else {
+		    mpVocabulary->load(strVocFile); bVocLoad = true;//bin格式打开
 	      if(!bVocLoad)
 	      {
 		  cerr << "字典路径错误 " << endl;
@@ -148,10 +148,10 @@ namespace ORB_SLAM2
 
 	      
 	      // Initialize pointcloud mapping  初始化 点云建图线程==============add====
-	      mpPointCloudMapping = make_shared<PointCloudMapping>( resolution );
+	      mpPointCloudMapping = std::make_shared<PointCloudMapping>( resolution );
 
-	      //Initialize the Tracking thread
-	      //(it will live in the main thread of execution, the one that called this constructor)
+	      //Initialize the Tracking std::thread
+	      //(it will live in the main std::thread of execution, the one that called this constructor)
 // 5. 初始化 跟踪线程 对象 未启动
 	      //mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
 	      //		      mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
@@ -159,23 +159,23 @@ namespace ORB_SLAM2
                  mpMap, mpPointCloudMapping, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
 
-	      //Initialize the Local Mapping thread and launch
+	      //Initialize the Local Mapping std::thread and launch
 // 6. 初始化 局部地图构建 线程 并启动
 	      mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
-	      mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
+	      mptLocalMapping = new std::thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
 
-	      //Initialize the Loop Closing thread and launch
+	      //Initialize the Loop Closing std::thread and launch
 // 7. 初始化闭环检测线程 并启动
 	      mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
-	      mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
+	      mptLoopClosing = new std::thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
-	      //Initialize the Viewer thread and launch
+	      //Initialize the Viewer std::thread and launch
 
 // 8. 初始化 跟踪线程可视化 并启动
 	      if(bUseViewer)
 	      {
 		  mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile);
-		  mptViewer = new thread(&Viewer::Run, mpViewer);
+		  mptViewer = new std::thread(&Viewer::Run, mpViewer);
 		  mpTracker->SetViewer(mpViewer);
 	      }
 
@@ -210,7 +210,7 @@ namespace ORB_SLAM2
 		* 锁主的转换， 
 		* 以及对条件变量的使用。
 		*/
-		  unique_lock<mutex> lock(mMutexMode);//线程锁定
+		  std::unique_lock<std::mutex> lock(mMutexMode);//线程锁定
 		  //定位 模式  跟踪+定位   建图关闭
 		  if(mbActivateLocalizationMode)
 		  {
@@ -235,7 +235,7 @@ namespace ORB_SLAM2
 
   // 2. 检查跟踪tracking线程重启 ================================================  
 	      {
-		  unique_lock<mutex> lock(mMutexReset);
+		  std::unique_lock<std::mutex> lock(mMutexReset);
 		  if(mbReset)
 		  {
 		      mpTracker->Reset();// 线程重置
@@ -244,7 +244,7 @@ namespace ORB_SLAM2
 	      }
   // 3. 双目跟踪 ================================================================
 	      cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft,imRight,timestamp);//得到 相机位姿
-	      unique_lock<mutex> lock2(mMutexState);
+	      std::unique_lock<std::mutex> lock2(mMutexState);
 	      mTrackingState = mpTracker->mState;//状态
 	      mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;//跟踪到的地图点
 	      mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;// 
@@ -262,7 +262,7 @@ namespace ORB_SLAM2
     
      // 1.  模式变换的检测   跟踪+建图  or  跟踪+定位+建图 Check mode change===========   
 	      {
-		  unique_lock<mutex> lock(mMutexMode);
+		  std::unique_lock<std::mutex> lock(mMutexMode);
 		  //  跟踪+定位
 		  if(mbActivateLocalizationMode)
 		  {
@@ -286,7 +286,7 @@ namespace ORB_SLAM2
 
   // 2. 检查跟踪tracking线程重启 ================================================  
 	      {
-		  unique_lock<mutex> lock(mMutexReset);
+		  std::unique_lock<std::mutex> lock(mMutexReset);
 		  if(mbReset)
 		  {
 		      mpTracker->Reset();//线程重置
@@ -311,7 +311,7 @@ namespace ORB_SLAM2
 
   // 3. RGBD相机跟踪================================================================ 	        
 	      cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);//得到相机位姿
-	      unique_lock<mutex> lock2(mMutexState);
+	      std::unique_lock<std::mutex> lock2(mMutexState);
 	      mTrackingState = mpTracker->mState;
 	      mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
 	      mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
@@ -330,7 +330,7 @@ namespace ORB_SLAM2
 
     // 1.  模式变换的检测   跟踪+建图  or  跟踪+定位+建图 Check mode change==========
 	      {
-		  unique_lock<mutex> lock(mMutexMode);// 地图上锁
+		  std::unique_lock<std::mutex> lock(mMutexMode);// 地图上锁
 	       //  跟踪+定位 
 		  if(mbActivateLocalizationMode)
 		  {
@@ -354,7 +354,7 @@ namespace ORB_SLAM2
 
     // 2. 检查跟踪tracking线程重启  ============================================
 	      {
-		  unique_lock<mutex> lock(mMutexReset);
+		  std::unique_lock<std::mutex> lock(mMutexReset);
 		  if(mbReset)
 		  {
 		      mpTracker->Reset();
@@ -370,7 +370,7 @@ namespace ORB_SLAM2
 	      // 显示更新	 
 	      // 后面的帧----------
 	      cv::Mat Tcw = mpTracker->GrabImageMonocular(im,timestamp);// 单目跟踪， 得到相机位姿
-	      unique_lock<mutex> lock2(mMutexState);
+	      std::unique_lock<std::mutex> lock2(mMutexState);
 	      mTrackingState = mpTracker->mState;
 	      mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
 	      mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
@@ -381,14 +381,14 @@ namespace ORB_SLAM2
 //  激活建图线程=======================================
 	  void System::ActivateLocalizationMode()
 	  {
-	      unique_lock<mutex> lock(mMutexMode);
+	      std::unique_lock<std::mutex> lock(mMutexMode);
 	      mbActivateLocalizationMode = true;
 	  }
 
 // 是建图线程失效======================================
 	  void System::DeactivateLocalizationMode()
 	  {
-	      unique_lock<mutex> lock(mMutexMode);
+	      std::unique_lock<std::mutex> lock(mMutexMode);
 	      mbDeactivateLocalizationMode = true;
 	  }
 
@@ -409,7 +409,7 @@ namespace ORB_SLAM2
 //系统复位重置================================================
 	  void System::Reset()
 	  {
-	      unique_lock<mutex> lock(mMutexReset);
+	      std::unique_lock<std::mutex> lock(mMutexReset);
 	      mbReset = true;
 	  }
 
@@ -425,7 +425,7 @@ namespace ORB_SLAM2
 		  while(!mpViewer->isFinished())
 		      usleep(5000);
 	      }
-	      // 等待所有线程 完全停止 Wait until all thread have effectively stopped
+	      // 等待所有线程 完全停止 Wait until all std::thread have effectively stopped
 	      while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished() || mpLoopCloser->isRunningGBA())
 	      {
 		  usleep(5000);
@@ -435,7 +435,7 @@ namespace ORB_SLAM2
 	  }
 
 // 保存 TUM数据集 相机位姿 轨迹================================================
-	  void System::SaveTrajectoryTUM(const string &filename)
+	  void System::SaveTrajectoryTUM(const std::string &filename)
 	  {
 	      cout << endl << "保存相机位姿轨迹到文件 " << filename << " ..." << endl;
 	      // 单目相机
@@ -445,19 +445,19 @@ namespace ORB_SLAM2
 		  return;
 	      }
 
-	      vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();// 关键帧 vector数组容器存储 
-	      sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);//排序 保证第一个关键帧在原点
+	      std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();// 关键帧 vector数组容器存储 
+	      std::sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);//排序 保证第一个关键帧在原点
 	      cv::Mat Two = vpKFs[0]->GetPoseInverse();//世界坐标系位姿
 
 	      ofstream f;//保存相机位姿轨迹的文件
 	      f.open(filename.c_str());
-	      f << fixed;
+	      f << std::fixed;
 	      // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
 	      // which is true when tracking failed (lbL).
-	      list<ORB_SLAM2::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();//关键帧的参考帧(前一帧)
-	      list<double>::iterator lT = mpTracker->mlFrameTimes.begin();//时间戳
-	      list<bool>::iterator lbL = mpTracker->mlbLost.begin();//标志 跟踪失败
-	      for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
+	      std::list<ORB_SLAM2::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();//关键帧的参考帧(前一帧)
+	      std::list<double>::iterator lT = mpTracker->mlFrameTimes.begin();//时间戳
+	      std::list<bool>::iterator lbL = mpTracker->mlbLost.begin();//标志 跟踪失败
+	      for(std::list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
 		  lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
 	      {
 		  if(*lbL)//跟踪失败 就跳过
@@ -480,7 +480,7 @@ namespace ORB_SLAM2
 		  cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();// 旋转矩阵
 		  cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);// 平移向量
 
-		  vector<float> q = Converter::toQuaternion(Rwc);// 旋转矩阵 对应 的四元素
+		  std::vector<float> q = Converter::toQuaternion(Rwc);// 旋转矩阵 对应 的四元素
 	  // 精度 6 位  时间戳 + 9位精度  平移向量  +9位精度  四元素姿态
 		  f << setprecision(6) << *lT << " " <<  setprecision(9) << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
 	      }
@@ -489,12 +489,12 @@ namespace ORB_SLAM2
 	  }
 
 //保存关键帧轨迹==============================================================
-	  void System::SaveKeyFrameTrajectoryTUM(const string &filename)
+	  void System::SaveKeyFrameTrajectoryTUM(const std::string &filename)
 	  {
 	      cout << endl << "保存关键帧轨迹 Saving keyframe trajectory to " << filename << " ..." << endl;
 
-	      vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();// 关键帧 vector数组容器存储 
-	      sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);//排序 保证第一个关键帧在原点
+	      std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();// 关键帧 vector数组容器存储 
+	      std::sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);//排序 保证第一个关键帧在原点
 
 	      // Transform all keyframes so that the first keyframe is at the origin.
 	      // After a loop closure the first keyframe might not be at the origin.
@@ -502,7 +502,7 @@ namespace ORB_SLAM2
 
 	      ofstream f;
 	      f.open(filename.c_str());
-	      f << fixed;
+	      f << std::fixed;
 
 	      for(size_t i=0; i<vpKFs.size(); i++)
 	      {
@@ -514,7 +514,7 @@ namespace ORB_SLAM2
 		      continue;
 		// 关键帧的 位姿 已经转化到 第一帧图像坐标系(世界坐标系)
 		  cv::Mat R = pKF->GetRotation().t();//旋转矩阵
-		  vector<float> q = Converter::toQuaternion(R);//四元素
+		  std::vector<float> q = Converter::toQuaternion(R);//四元素
 		  cv::Mat t = pKF->GetCameraCenter();//平移矩阵 当前帧 相机坐标系 中心点位置
 		  f << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
 		    << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
@@ -524,7 +524,7 @@ namespace ORB_SLAM2
 	      cout << endl << "trajectory saved!" << endl;
 	  }
 // KITTI========================================================================
-	  void System::SaveTrajectoryKITTI(const string &filename)
+	  void System::SaveTrajectoryKITTI(const std::string &filename)
 	  {
 	      cout << endl << "保持相机位姿  " << filename << " ..." << endl;
 	      if(mSensor==MONOCULAR)
@@ -533,18 +533,18 @@ namespace ORB_SLAM2
 		  return;
 	      }
 
-	      vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();// 关键帧 vector数组容器存储 
-	      sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);//排序 保证第一个关键帧在原点
+	      std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();// 关键帧 vector数组容器存储 
+	      std::sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);//排序 保证第一个关键帧在原点
 	      cv::Mat Two = vpKFs[0]->GetPoseInverse();// 世界坐标系位姿
 
 	      ofstream f;
 	      f.open(filename.c_str());
-	      f << fixed;
+	      f << std::fixed;
 	      // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
 	      // which is true when tracking failed (lbL).
-	      list<ORB_SLAM2::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();//关键帧的参考值  关键帧位姿已经转化到 世界坐标系下
-	      list<double>::iterator lT = mpTracker->mlFrameTimes.begin();//时间戳
-	      for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(), lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
+	      std::list<ORB_SLAM2::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();//关键帧的参考值  关键帧位姿已经转化到 世界坐标系下
+	      std::list<double>::iterator lT = mpTracker->mlFrameTimes.begin();//时间戳
+	      for(std::list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(), lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
 	      {
 		  ORB_SLAM2::KeyFrame* pKF = *lRit;// 参考帧
 
@@ -573,19 +573,19 @@ namespace ORB_SLAM2
 // ================================================
 	  int System::GetTrackingState()
 	  {
-	      unique_lock<mutex> lock(mMutexState);
+	      std::unique_lock<std::mutex> lock(mMutexState);
 	      return mTrackingState;
 	  }
 //=================================================
-	  vector<MapPoint*> System::GetTrackedMapPoints()
+	  std::vector<MapPoint*> System::GetTrackedMapPoints()
 	  {
-	      unique_lock<mutex> lock(mMutexState);
+	      std::unique_lock<std::mutex> lock(mMutexState);
 	      return mTrackedMapPoints;
 	  }
 //=================================================
-	  vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
+	  std::vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 	  {
-	      unique_lock<mutex> lock(mMutexState);
+	      std::unique_lock<std::mutex> lock(mMutexState);
 	      return mTrackedKeyPointsUn;
 	  }
 

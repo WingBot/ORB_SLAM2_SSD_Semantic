@@ -8,7 +8,7 @@
 #define SYSTEM_H
 
 #include<string>//字符串
-#include<thread>// 线程
+#include <thread>// 线程
 #include<opencv2/core/core.hpp>// opencv
 
 // user 
@@ -50,7 +50,7 @@ class System
 
 	// Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
        // 初始化系统  启动 建图 闭环检测  可视化 线程 
-	System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true);
+	System(const std::string &strVocFile, const std::string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true);
 
 	// Proccess the given stereo frame. Images must be synchronized and rectified.
 	// Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -71,10 +71,10 @@ class System
 	// 单目 跟踪  返回相机位姿
 	cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
-	// This stops local mapping thread (map building) and performs only camera tracking.
+	// This stops local mapping std::thread (map building) and performs only camera tracking.
 	// 定位 + 跟踪 模式
 	void ActivateLocalizationMode();
-	// This resumes local mapping thread and performs SLAM again.
+	// This resumes local mapping std::thread and performs SLAM again.
 	// 建图 + 跟踪 模式
 	void DeactivateLocalizationMode();
 
@@ -95,23 +95,23 @@ class System
 	// Call first Shutdown()
 	// See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
 	// 保存相机 位姿
-	void SaveTrajectoryTUM(const string &filename);
+	void SaveTrajectoryTUM(const std::string &filename);
 
 	// Save keyframe poses in the TUM RGB-D dataset format.
 	// This method works for all sensor input.
 	// Call first Shutdown()
 	// See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
-	void SaveKeyFrameTrajectoryTUM(const string &filename);
+	void SaveKeyFrameTrajectoryTUM(const std::string &filename);
 
 	// Save camera trajectory in the KITTI dataset format.
 	// Only for stereo and RGB-D. This method does not work for monocular.
 	// Call first Shutdown()
 	// See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
-	void SaveTrajectoryKITTI(const string &filename);
+	void SaveTrajectoryKITTI(const std::string &filename);
 
 	// TODO: Save/Load functions
-	// SaveMap(const string &filename);
-	// LoadMap(const string &filename);
+	// SaveMap(const std::string &filename);
+	// LoadMap(const std::string &filename);
 
 	// Information from most recent processed frame
 	// You can call this right after TrackMonocular (or stereo or RGBD)
@@ -146,7 +146,7 @@ class System
 	LocalMapping* mpLocalMapper;
 
 	// Loop Closer. It searches loops with every new keyframe. If there is a loop it performs
-	// a pose graph optimization and full bundle adjustment (in a new thread) afterwards.
+	// a pose graph optimization and full bundle adjustment (in a new std::thread) afterwards.
 	// 回环检测对象指针
 	LoopClosing* mpLoopCloser;
 
@@ -159,7 +159,7 @@ class System
 	MapDrawer* mpMapDrawer;
 
 	// System threads: Local Mapping, Loop Closing, Viewer.
-	// The Tracking thread "lives" in the main execution thread that creates the System object.
+	// The Tracking std::thread "lives" in the main execution std::thread that creates the System object.
 	std::thread* mptLocalMapping;// 建图线程         指针
 	std::thread* mptLoopClosing;  // 闭环检测线程  指针
 	std::thread* mptViewer;	     // 可视化线程      指针
@@ -183,7 +183,7 @@ class System
 
 
         // point cloud mapping
-        shared_ptr<PointCloudMapping> mpPointCloudMapping; // 点云地图类 共享指针 类成员变量
+        std::shared_ptr<PointCloudMapping> mpPointCloudMapping; // 点云地图类 共享指针 类成员变量
 
     };
 

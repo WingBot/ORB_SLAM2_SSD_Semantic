@@ -37,16 +37,16 @@ Pos0和X0不参与Bundle Adjustment。
 
 #include "Optimizer.h"
 // 函数优化方法
-#include "Thirdparty/g2o/g2o/core/optimization_algorithm_levenberg.h"
+#include "g2o/core/optimization_algorithm_levenberg.h"
 //优化方法 莱文贝格－马夸特方法（Levenberg–Marquardt algorithm）能提供数非线性最小化（局部最小）的数值解。
 // 矩阵 分解 求解器
-#include "Thirdparty/g2o/g2o/core/block_solver.h"//矩阵快分解 求解器的实现。主要来自choldmod, csparse。在使用g2o时要先选择其中一种。
-#include "Thirdparty/g2o/g2o/solvers/linear_solver_eigen.h"// 矩阵 线性优化求解器
+#include "g2o/core/block_solver.h"//矩阵快分解 求解器的实现。主要来自choldmod, csparse。在使用g2o时要先选择其中一种。
+#include "g2o/solvers/eigen/linear_solver_eigen.h"// 矩阵 线性优化求解器
 // #include <g2o/solvers/csparse/linear_solver_csparse.h>  // csparse求解器
 // #include <g2o/solvers/dense/linear_solver_cholmod.h //
-#include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"// 稠密 矩阵 线性求解器
+#include "g2o/solvers/dense/linear_solver_dense.h"// 稠密 矩阵 线性求解器
 // 图 边顶点的类型
-#include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"// 定义好的顶点类型  6维度 优化变量  例如 相机 位姿
+#include "g2o/types/sba/types_six_dof_expmap.h"// 定义好的顶点类型  6维度 优化变量  例如 相机 位姿
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"// 定义好的顶点类型  7维度 优化变量  例如 相机 位姿 + 深度信息
 #include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
 #include<Eigen/StdVector>
@@ -71,8 +71,8 @@ namespace ORB_SLAM2
  */  
     void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
     {
-	vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();// 地图的关键帧
-	vector<MapPoint*> vpMP = pMap->GetAllMapPoints();// 地图的 地图点
+	std::vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();// 地图的关键帧
+	std::vector<MapPoint*> vpMP = pMap->GetAllMapPoints();// 地图的 地图点
 	BundleAdjustment(vpKFs,vpMP,nIterations,pbStopFlag, nLoopKF, bRobust);
     }
 
@@ -98,10 +98,10 @@ namespace ORB_SLAM2
  * @param   nLoopKF     关键帧的个数
  * @param   bRobust     是否使用核函数
  */   
-    void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,
+    void Optimizer::BundleAdjustment(const std::vector<KeyFrame *> &vpKFs, const std::vector<MapPoint *> &vpMP,
 				    int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
     {
-	vector<bool> vbNotIncludedMP;
+	std::vector<bool> vbNotIncludedMP;
 	vbNotIncludedMP.resize(vpMP.size());//地图点数量
 // 步骤1：初始化g2o优化器	
      //步骤1.1：设置求解器类型  帧位姿 pose 维度为 6 (优化变量维度), 地图点  landmark 维度为 3
@@ -160,14 +160,14 @@ namespace ORB_SLAM2
 	    vPoint->setMarginalized(true);// 在优化过程中，这个节点应该被边缘化  g2o 中必须设置 marg
 	    optimizer.addVertex(vPoint);// 添加顶点
 
-	  //  const map<KeyFrame*,size_t> observations = pMP->GetObservations();
+	  //  const std::map<KeyFrame*,size_t> observations = pMP->GetObservations();
 	  const auto observations = pMP->GetObservations();// 能够观测到该地图点的  观测关键帧 都应该和 这个地图顶点相连
 	  // 地图点和地图点之间的 连线 是约束关系  是边 
 	    int nEdges = 0;
 	    
 // 步骤3：向优化器添加投影边边  edge  地图点 和 各自观测帧 之间的 关系 
-	    // map<KeyFrame*,size_t>::const_iterator mit 
-	    for( map<KeyFrame*,size_t>::const_iterator mit=observations.begin(); mit!=observations.end(); mit++)
+	    // std::map<KeyFrame*,size_t>::const_iterator mit 
+	    for( std::map<KeyFrame*,size_t>::const_iterator mit=observations.begin(); mit!=observations.end(); mit++)
 	    {
 
 		KeyFrame* pKF = mit->first;//观测到该点的一个关键帧
@@ -391,14 +391,14 @@ namespace ORB_SLAM2
 
 	// 单目 边 类型
 	const int N = pFrame->N;//  帧  的 地图点  个数
-	vector<g2o::EdgeSE3ProjectXYZOnlyPose*> vpEdgesMono;// 单目 边容器  保存边
-	vector<size_t> vnIndexEdgeMono;
+	std::vector<g2o::EdgeSE3ProjectXYZOnlyPose*> vpEdgesMono;// 单目 边容器  保存边
+	std::vector<size_t> vnIndexEdgeMono;
 	vpEdgesMono.reserve(N);
 	vnIndexEdgeMono.reserve(N);
 
 	// 双目/深度边 类型
-	vector<g2o::EdgeStereoSE3ProjectXYZOnlyPose*> vpEdgesStereo;// 双目 / 深度 边容器 保存边
-	vector<size_t> vnIndexEdgeStereo;
+	std::vector<g2o::EdgeStereoSE3ProjectXYZOnlyPose*> vpEdgesStereo;// 双目 / 深度 边容器 保存边
+	std::vector<size_t> vnIndexEdgeStereo;
 	vpEdgesStereo.reserve(N);
 	vnIndexEdgeStereo.reserve(N);
 
@@ -407,7 +407,7 @@ namespace ORB_SLAM2
 
 // 步骤3：添加一元边：相机投影模型
 	{
-	unique_lock<mutex> lock(MapPoint::mGlobalMutex);
+	std::unique_lock<std::mutex> lock(MapPoint::mGlobalMutex);
 
 	for(int i=0; i<N; i++)// 每个帧  的 地图点   
 	{
@@ -619,14 +619,14 @@ namespace ORB_SLAM2
     void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap)
     {    
 	// 本地关键帧  Local KeyFrames: First Breath Search from Current Keyframe
-	list<KeyFrame*> lLocalKeyFrames;//  局部关键帧集合 关键帧 的一级相邻帧 集合
+	std::list<KeyFrame*> lLocalKeyFrames;//  局部关键帧集合 关键帧 的一级相邻帧 集合
 	
 // 步骤1：将当前关键帧加入 局部关键帧集合 lLocalKeyFrames
 	lLocalKeyFrames.push_back(pKF);
 	pKF->mnBALocalForKF = pKF->mnId;
 // 步骤2：找到关键帧连接的关键帧（一级相连），加入 lLocalKeyFrames 中	
        // 寻找关键帧 的 一级相邻帧
-	const vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();//关键帧 的 一级相邻帧
+	const std::vector<KeyFrame*> vNeighKFs = pKF->GetVectorCovisibleKeyFrames();//关键帧 的 一级相邻帧
 	for(int i=0, iend=vNeighKFs.size(); i<iend; i++)
 	{
 	    KeyFrame* pKFi = vNeighKFs[i];//关键帧 的 一级相邻帧
@@ -637,14 +637,14 @@ namespace ORB_SLAM2
 	
 // 步骤3：遍历 lLocalKeyFrames 中关键帧，将它们观测的MapPoints加入到 局部地图点集 lLocalMapPoints
 	// 局部地图点集  Local MapPoints seen in Local KeyFrames
-	list<MapPoint*> lLocalMapPoints;// 局部地图点集
+	std::list<MapPoint*> lLocalMapPoints;// 局部地图点集
 	// 遍历每一个 局部关键帧
-        // list<KeyFrame*>::iterator  
+        // std::list<KeyFrame*>::iterator  
 	for(auto lit=lLocalKeyFrames.begin() , lend=lLocalKeyFrames.end(); lit!=lend; lit++)
 	{
-	    vector<MapPoint*> vpMPs = (*lit)->GetMapPointMatches();// 每个局部关键帧的 地图点
+	    std::vector<MapPoint*> vpMPs = (*lit)->GetMapPointMatches();// 每个局部关键帧的 地图点
 	    // 遍历 每一个 局部关键帧 的 每一个 地图点
-	    // vector<MapPoint*>::iterator 
+	    // std::vector<MapPoint*>::iterator 
 	    for(auto vit=vpMPs.begin(), vend=vpMPs.end(); vit!=vend; vit++)
 	    {
 		MapPoint* pMP = *vit;// 每一个 局部关键帧 的 每一个 地图点
@@ -660,14 +660,14 @@ namespace ORB_SLAM2
 
 	//固定关键帧  Fixed Keyframes. Keyframes that see Local MapPoints but that are not Local Keyframes
 // 步骤4：能观测到局部地图点集地图点的关键帧，但不属于局部关键帧的关键帧，这些关键帧在局部BA优化时不优化	
-	list<KeyFrame*> lFixedCameras;
+	std::list<KeyFrame*> lFixedCameras;
 	// 遍历 局部地图点集 中的 每一个地图点 查看其观测帧
-	// list<MapPoint*>::iterator
+	// std::list<MapPoint*>::iterator
 	for(auto lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
 	{
-	    map<KeyFrame*,size_t> observations = (*lit)->GetObservations();//局部地图点 的 观测帧
+	    std::map<KeyFrame*,size_t> observations = (*lit)->GetObservations();//局部地图点 的 观测帧
 	    // 遍历每一个 局部地图点 的 观测帧  查看其是否在 局部关键帧中
-	    // map<KeyFrame*,size_t>::iterator
+	    // std::map<KeyFrame*,size_t>::iterator
 	    for(auto mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
 	    {
 		KeyFrame* pKFi = mit->first;// 每一个 局部地图点 的 观测帧
@@ -700,7 +700,7 @@ namespace ORB_SLAM2
 	unsigned long maxKFid = 0;
 
 // 步骤6：添加顶点 局部关键帧 位姿 顶点 Set Local KeyFrame vertices
-	//list<KeyFrame*>::iterator lit
+	//std::list<KeyFrame*>::iterator lit
 	for(auto lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
 	{
 	    KeyFrame* pKFi = *lit;//  局部关键帧
@@ -714,7 +714,7 @@ namespace ORB_SLAM2
 	}
 
 // 步骤7：添加顶点：设置固定关键帧顶点  Set Fixed KeyFrame vertices
-        // list<KeyFrame*>::iterator lit
+        // std::list<KeyFrame*>::iterator lit
 	for(auto lit=lFixedCameras.begin(), lend=lFixedCameras.end(); lit!=lend; lit++)
 	{
 	    KeyFrame* pKFi = *lit;// 局部固定关键帧
@@ -730,24 +730,24 @@ namespace ORB_SLAM2
 // 步骤8：设置 地图点 顶点 Set MapPoint vertices 帧和每一个地图点都可能相连形成边
 	const int nExpectedSize = ( lLocalKeyFrames.size() + lFixedCameras.size() ) * lLocalMapPoints.size();
 
-	vector<g2o::EdgeSE3ProjectXYZ*> vpEdgesMono;// 单目地图点 边类型  
+	std::vector<g2o::EdgeSE3ProjectXYZ*> vpEdgesMono;// 单目地图点 边类型  
 	vpEdgesMono.reserve(nExpectedSize);
-	vector<KeyFrame*> vpEdgeKFMono;// 单目关键帧
+	std::vector<KeyFrame*> vpEdgeKFMono;// 单目关键帧
 	vpEdgeKFMono.reserve(nExpectedSize);
 
-	vector<MapPoint*> vpMapPointEdgeMono;// 双目地图点
+	std::vector<MapPoint*> vpMapPointEdgeMono;// 双目地图点
 	vpMapPointEdgeMono.reserve(nExpectedSize);// 
-	vector<g2o::EdgeStereoSE3ProjectXYZ*> vpEdgesStereo;// 双目 地图点 边
+	std::vector<g2o::EdgeStereoSE3ProjectXYZ*> vpEdgesStereo;// 双目 地图点 边
 	vpEdgesStereo.reserve(nExpectedSize);
 
-	vector<KeyFrame*> vpEdgeKFStereo;// 双目 关键帧   
+	std::vector<KeyFrame*> vpEdgeKFStereo;// 双目 关键帧   
 	vpEdgeKFStereo.reserve(nExpectedSize);
-	vector<MapPoint*> vpMapPointEdgeStereo;// 双目 地图点 
+	std::vector<MapPoint*> vpMapPointEdgeStereo;// 双目 地图点 
 	vpMapPointEdgeStereo.reserve(nExpectedSize);
 
 	const float thHuberMono = sqrt(5.991);
 	const float thHuberStereo = sqrt(7.815);
-	// list<MapPoint*>::iterator lit
+	// std::list<MapPoint*>::iterator lit
       // 遍历 每一个 局部地图点
 	for(auto lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
 	{
@@ -760,10 +760,10 @@ namespace ORB_SLAM2
 	    vPoint->setMarginalized(true);
 	    optimizer.addVertex(vPoint);// 添加顶点
 
-	    const map<KeyFrame*,size_t> observations = pMP->GetObservations();// 地图点对应的 观测 帧
+	    const std::map<KeyFrame*,size_t> observations = pMP->GetObservations();// 地图点对应的 观测 帧
 
 // 步骤9：对每一对关联的MapPoint和KeyFrame构建边   
-	    // map<KeyFrame*,size_t>::const_iterator mit
+	    // std::map<KeyFrame*,size_t>::const_iterator mit
 	    for(auto  mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
 	    {
 		KeyFrame* pKFi = mit->first;// 每一个顶点的 观测关键帧帧 
@@ -897,7 +897,7 @@ namespace ORB_SLAM2
       }
       
  // 步骤13：在优化后重新计算误差，剔除连接误差比较大的关键帧和MapPoint
-	vector<pair<KeyFrame*,MapPoint*> > vToErase;// 连接误差较大 需要 剔除的 关键帧和MapPoint
+	std::vector<std::pair<KeyFrame*,MapPoint*> > vToErase;// 连接误差较大 需要 剔除的 关键帧和MapPoint
 	vToErase.reserve(vpEdgesMono.size() + vpEdgesStereo.size());//单目边 双目边
 	    // Check inlier observations 
 	 // 每一个单目边  误差 两维 
@@ -913,7 +913,7 @@ namespace ORB_SLAM2
 		{
 		    KeyFrame* pKFi = vpEdgeKFMono[i];//边对应的 帧
        // 步骤13.1：标记需要删除的边	    
-		    vToErase.push_back(make_pair(pKFi,pMP));//删除 这个边 
+		    vToErase.push_back(std::make_pair(pKFi,pMP));//删除 这个边 
 		}
 	    }
           // 每一个双目边  误差 三维 
@@ -929,7 +929,7 @@ namespace ORB_SLAM2
 		{
 		    KeyFrame* pKFi = vpEdgeKFStereo[i];//边对应的 帧
        // 步骤13.1：标记需要删除的边	    
-		    vToErase.push_back(make_pair(pKFi,pMP));//删除 这个边 
+		    vToErase.push_back(std::make_pair(pKFi,pMP));//删除 这个边 
 		}
 	    }
 	    
@@ -937,7 +937,7 @@ namespace ORB_SLAM2
          // 连接偏差比较大，在关键帧中剔除对该MapPoint的观测
          // 连接偏差比较大，在MapPoint中剔除对该关键帧的观测
 	 // Get Map Mutex
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	std::unique_lock<std::mutex> lock(pMap->mMutexMapUpdate);
 	if(!vToErase.empty())
 	{
 	    for(size_t i=0;i<vToErase.size();i++)
@@ -952,7 +952,7 @@ namespace ORB_SLAM2
 	// Recover optimized data
 // 步骤14：优化后更新关键帧位姿以及MapPoints的位置、平均观测方向等属性
      // 步骤14.1：优化后更新 关键帧 Keyframes
-	// list<KeyFrame*>::iterator
+	// std::list<KeyFrame*>::iterator
 	for(auto  lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
 	{
 	    KeyFrame* pKF = *lit;//关键帧
@@ -962,7 +962,7 @@ namespace ORB_SLAM2
 	}
 
      //步骤14.2：优化后 更新地图点 Points
-        // list<MapPoint*>::iterator
+        // std::list<MapPoint*>::iterator
 	for(auto lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
 	{
 	    MapPoint* pMP = *lit;//地图点
@@ -998,7 +998,7 @@ namespace ORB_SLAM2
 					  KeyFrame* pCurKF,
 					  const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
 					  const LoopClosing::KeyFrameAndPose &CorrectedSim3,
-					  const map<KeyFrame *, set<KeyFrame *> > &LoopConnections, const bool &bFixScale)
+					  const std::map<KeyFrame *, std::set<KeyFrame *> > &LoopConnections, const bool &bFixScale)
     {
       
 // 步骤1：构造优化器      
@@ -1019,16 +1019,16 @@ namespace ORB_SLAM2
 	solver->setUserLambdaInit(1e-16);
 	optimizer.setAlgorithm(solver);
 
-	const vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();//全局地图 的 所有 关键帧 
-	const vector<MapPoint*> vpMPs = pMap->GetAllMapPoints();//全局地图 的 所有 地图点
+	const std::vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();//全局地图 的 所有 关键帧 
+	const std::vector<MapPoint*> vpMPs = pMap->GetAllMapPoints();//全局地图 的 所有 地图点
 
 	const unsigned int nMaxKFid = pMap->GetMaxKFid();//最大关键帧 id
         // 仅经过Sim3传播调整，未经过优化的keyframe的pose
-	vector<g2o::Sim3,Eigen::aligned_allocator<g2o::Sim3> > vScw(nMaxKFid+1);// 存储 优化前 帧 的位姿
+	std::vector<g2o::Sim3,Eigen::aligned_allocator<g2o::Sim3> > vScw(nMaxKFid+1);// 存储 优化前 帧 的位姿
 	// 经过Sim3传播调整，经过优化的keyframe的pose
-	vector<g2o::Sim3,Eigen::aligned_allocator<g2o::Sim3> > vCorrectedSwc(nMaxKFid+1);//  存储 优化后 帧 的位姿
+	std::vector<g2o::Sim3,Eigen::aligned_allocator<g2o::Sim3> > vCorrectedSwc(nMaxKFid+1);//  存储 优化后 帧 的位姿
 	//  
-	vector<g2o::VertexSim3Expmap*> vpVertices(nMaxKFid+1);//保存g2o 顶点
+	std::vector<g2o::VertexSim3Expmap*> vpVertices(nMaxKFid+1);//保存g2o 顶点
 
 	const int minFeat = 100;
 	
@@ -1073,21 +1073,21 @@ namespace ORB_SLAM2
 	}
 
 
-	set<pair<long unsigned int,long unsigned int> > sInsertedEdges;
+	std::set<std::pair<long unsigned int,long unsigned int> > sInsertedEdges;
 	const Eigen::Matrix<double,7,7> matLambda = Eigen::Matrix<double,7,7>::Identity();//信息矩阵
 
 	// Set Loop edges
 // 步骤3：添加闭环新边( 帧 连接 帧 )：LoopConnections是闭环时因为MapPoints调整而出现的新关键帧连接关系（不是当前帧与闭环匹配帧之间的连接关系）	
         //  遍历  因闭环时 MapPoints 调整而新生成的边
-	for(map<KeyFrame *, set<KeyFrame *> >::const_iterator mit = LoopConnections.begin(), mend=LoopConnections.end(); mit!=mend; mit++)
+	for(std::map<KeyFrame *, std::set<KeyFrame *> >::const_iterator mit = LoopConnections.begin(), mend=LoopConnections.end(); mit!=mend; mit++)
 	{
 	    KeyFrame* pKF = mit->first;//关键帧 
 	    const long unsigned int nIDi = pKF->mnId;//id
-	    const set<KeyFrame*> &spConnections = mit->second;// 与关键帧 相连的 关键帧
+	    const std::set<KeyFrame*> &spConnections = mit->second;// 与关键帧 相连的 关键帧
 	    const g2o::Sim3 Siw = vScw[nIDi];//顶点帧 位姿
 	    const g2o::Sim3 Swi = Siw.inverse();// 逆
 
-	    for(set<KeyFrame*>::const_iterator sit=spConnections.begin(), send=spConnections.end(); sit != send; sit++)
+	    for(std::set<KeyFrame*>::const_iterator sit=spConnections.begin(), send=spConnections.end(); sit != send; sit++)
 	    {
 		const long unsigned int nIDj = (*sit)->mnId;// 相连关键帧 id
 		if((nIDi != pCurKF->mnId || nIDj != pLoopKF->mnId) && pKF->GetWeight(*sit) < minFeat)
@@ -1106,7 +1106,7 @@ namespace ORB_SLAM2
 
 		optimizer.addEdge(e);//添加边
 
-		sInsertedEdges.insert(make_pair(min(nIDi,nIDj),max(nIDi,nIDj)));
+		sInsertedEdges.insert(std::make_pair(std::min(nIDi,nIDj),std::max(nIDi,nIDj)));
 	    }
 	}
 
@@ -1155,8 +1155,8 @@ namespace ORB_SLAM2
      // 步骤4.2：关键帧<---->闭环帧 添加在CorrectLoop函数中AddLoopEdge函数添加的闭环连接边（当前帧与闭环匹配帧之间的连接关系）
             // 使用经过Sim3调整前关键帧之间的相对关系作为边
 	    // Loop edges
-	    const set<KeyFrame*> sLoopEdges = pKF->GetLoopEdges();
-	    for(set<KeyFrame*>::const_iterator sit=sLoopEdges.begin(), send=sLoopEdges.end(); sit!=send; sit++)
+	    const std::set<KeyFrame*> sLoopEdges = pKF->GetLoopEdges();
+	    for(std::set<KeyFrame*>::const_iterator sit=sLoopEdges.begin(), send=sLoopEdges.end(); sit!=send; sit++)
 	    {
 		KeyFrame* pLKF = *sit;
 		if(pLKF->mnId<pKF->mnId)
@@ -1184,8 +1184,8 @@ namespace ORB_SLAM2
        // 步骤4.3：关键帧<----->相邻帧  最有很好共视关系的关键帧也作为边进行优化
             // 使用经过Sim3调整前关键帧之间的相对关系作为边
 	    // Covisibility graph edges
-	    const vector<KeyFrame*> vpConnectedKFs = pKF->GetCovisiblesByWeight(minFeat);// 100个相邻帧
-	    for(vector<KeyFrame*>::const_iterator vit=vpConnectedKFs.begin(); vit!=vpConnectedKFs.end(); vit++)
+	    const std::vector<KeyFrame*> vpConnectedKFs = pKF->GetCovisiblesByWeight(minFeat);// 100个相邻帧
+	    for(std::vector<KeyFrame*>::const_iterator vit=vpConnectedKFs.begin(); vit!=vpConnectedKFs.end(); vit++)
 	    {
 		KeyFrame* pKFn = *vit;// 关键帧 相邻帧
 		// 非 父子帧边 无孩子  无闭环边
@@ -1193,7 +1193,7 @@ namespace ORB_SLAM2
 		{
 		    if(!pKFn->isBad() && pKFn->mnId < pKF->mnId)
 		    {
-			if(sInsertedEdges.count(make_pair(min(pKF->mnId,pKFn->mnId),max(pKF->mnId,pKFn->mnId))))
+			if(sInsertedEdges.count(std::make_pair(std::min(pKF->mnId,pKFn->mnId),std::max(pKF->mnId,pKFn->mnId))))
 			    continue;
 
 			g2o::Sim3 Snw;
@@ -1223,7 +1223,7 @@ namespace ORB_SLAM2
 	optimizer.initializeOptimization();
 	optimizer.optimize(20);//优化20次
 
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	std::unique_lock<std::mutex> lock(pMap->mMutexMapUpdate);
 
 	// SE3 Pose Recovering. Sim3:[sR t;0 1] -> SE3:[R t/s;0 1]
 // 步骤6：设定帧关键帧优化后的位姿
@@ -1307,7 +1307,7 @@ namespace ORB_SLAM2
  * @param th2                 核函数阈值
  * @param bFixScale       是否优化尺度，弹目进行尺度优化，双目不进行尺度优化
  */
-    int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches1, g2o::Sim3 &g2oS12, const float th2, const bool bFixScale)
+    int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint *> &vpMatches1, g2o::Sim3 &g2oS12, const float th2, const bool bFixScale)
     {
 // 步骤1：初始化g2o优化器
      // 先构造求解器
@@ -1355,10 +1355,10 @@ namespace ORB_SLAM2
 // 步骤3 ：添加 地图点 顶点
        // Set MapPoint vertices
 	const int N = vpMatches1.size();// 帧2 的匹配地图点
-	const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
-	vector<g2o::EdgeSim3ProjectXYZ*> vpEdges12;             //pKF2对应的MapPoints到pKF1的投影
-	vector<g2o::EdgeInverseSim3ProjectXYZ*> vpEdges21;//pKF1对应的MapPoints到pKF2的投影
-	vector<size_t> vnIndexEdge;
+	const std::vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
+	std::vector<g2o::EdgeSim3ProjectXYZ*> vpEdges12;             //pKF2对应的MapPoints到pKF1的投影
+	std::vector<g2o::EdgeInverseSim3ProjectXYZ*> vpEdges21;//pKF1对应的MapPoints到pKF2的投影
+	std::vector<size_t> vnIndexEdge;
 
 	vnIndexEdge.reserve(2*N);
 	vpEdges12.reserve(2*N);

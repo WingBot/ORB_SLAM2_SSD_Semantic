@@ -27,7 +27,7 @@
 #include "Optimizer.h"
 #include "ORBmatcher.h"
 #include<mutex>
-#include<thread>
+#include<std::thread>
 
 
 namespace ORB_SLAM2
@@ -97,7 +97,7 @@ namespace ORB_SLAM2
  */
       void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
       {
-	  unique_lock<mutex> lock(mMutexLoopQueue);
+	  std::unique_lock<std::mutex> lock(mMutexLoopQueue);
 	  if(pKF->mnId != 0)
 	      mlpLoopKeyFrameQueue.push_back(pKF);
       }
@@ -108,7 +108,7 @@ namespace ORB_SLAM2
  */
       bool LoopClosing::CheckNewKeyFrames()
       {
-	  unique_lock<mutex> lock(mMutexLoopQueue);
+	  std::unique_lock<std::mutex> lock(mMutexLoopQueue);
 	  return(!mlpLoopKeyFrameQueue.empty());
       }
       
@@ -121,10 +121,10 @@ namespace ORB_SLAM2
 	
 // 步骤1： 从队列中取出一个关键帧	
 	  {
-	      unique_lock<mutex> lock(mMutexLoopQueue);
+	      std::unique_lock<std::mutex> lock(mMutexLoopQueue);
 	      mpCurrentKF = mlpLoopKeyFrameQueue.front();
 	      mlpLoopKeyFrameQueue.pop_front();//出队
-	      // Avoid that a keyframe can be erased while it is being process by this thread
+	      // Avoid that a keyframe can be erased while it is being process by this std::thread
 	      mpCurrentKF->SetNotErase();//不能删除
 	  }
 
@@ -142,7 +142,7 @@ namespace ORB_SLAM2
 	  // We will impose loop candidates to have a higher similarity than this
  // 步骤3：遍历所有共视关键帧，计算当前关键帧与每个共视关键帧 的bow相似度得分，并得到最低得分minScore
           // 当前帧的所有 共视关键帧 
-	  const vector<KeyFrame*> vpConnectedKeyFrames = mpCurrentKF->GetVectorCovisibleKeyFrames();
+	  const std::vector<KeyFrame*> vpConnectedKeyFrames = mpCurrentKF->GetVectorCovisibleKeyFrames();
 	  const DBoW2::BowVector &CurrentBowVec = mpCurrentKF->mBowVec;// 当前帧的 BoW 字典单词描述向量
 	  float minScore = 1;
 	  // 遍历每一个共视关键帧
@@ -161,7 +161,7 @@ namespace ORB_SLAM2
 	  
  // 步骤4：在所有关键帧数据库中找出与当前帧按最低得分minScore 匹配的 闭环备选帧
 	  // Query the database imposing the minimum score
-	  vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectLoopCandidates(mpCurrentKF, minScore);
+	  std::vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectLoopCandidates(mpCurrentKF, minScore);
 
 	  // If there are no loop candidates, just add new keyframe and return false
 	  if(vpCandidateKFs.empty())// 没有闭环候选帧
@@ -181,17 +181,17 @@ namespace ORB_SLAM2
 	  // 2、检测“ 子候选组 ”中每一个关键帧是否存在于“ 连续组 ”，如果存在 nCurrentConsistency ++，则将该“子候选组”放入“当前连续组 vCurrentConsistentGroups ”
 	  // 3、如果 nCurrentConsistency 大于等于3，那么该”子候选组“代表的候选帧过关，进入 mvpEnoughConsistentCandidates  
 	  mvpEnoughConsistentCandidates.clear();// 最终筛选后得到的闭环帧
-	  // ConsistentGroup 数据类型为pair<set<KeyFrame*>,int>
+	  // ConsistentGroup 数据类型为pair<std::set<KeyFrame*>,int>
 	   // ConsistentGroup.firs 对应每个“连续组”中的关键帧，ConsistentGroup.second 为每个“连续组”的序号
-	  vector<ConsistentGroup> vCurrentConsistentGroups;//具有连续性的候选帧 群组
-	  vector<bool> vbConsistentGroup(mvConsistentGroups.size(),false);// 子连续组 是否连续
+	  std::vector<ConsistentGroup> vCurrentConsistentGroups;//具有连续性的候选帧 群组
+	  std::vector<bool> vbConsistentGroup(mvConsistentGroups.size(),false);// 子连续组 是否连续
        // 步骤5.1： 遍历  每一个  闭环 候选帧
 	  for(size_t i=0, iend=vpCandidateKFs.size(); i<iend; i++)
 	  {
 	      KeyFrame* pCandidateKF = vpCandidateKFs[i];// 每一个  闭环 候选帧
 	      
        // 步骤5.2：  将自己以及与自己相连的关键帧构成一个“子候选组”
-	      set<KeyFrame*> spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();// 与自己相连的关键帧
+	      std::set<KeyFrame*> spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();// 与自己相连的关键帧
 	      spCandidateGroup.insert(pCandidateKF);// 自己也算进去
 
 	      bool bEnoughConsistent = false;
@@ -201,11 +201,11 @@ namespace ORB_SLAM2
 	      for(size_t iG=0, iendG=mvConsistentGroups.size(); iG<iendG; iG++)
 	      {
 	     // 取出一个之前的 子连续组
-		  set<KeyFrame*> sPreviousGroup = mvConsistentGroups[iG].first;
+		  std::set<KeyFrame*> sPreviousGroup = mvConsistentGroups[iG].first;
 		  // 遍历每个“子候选组”，检测候选组中每一个关键帧在“子连续组”中是否存在
 		  // 如果有一帧共同存在于“ 子候选组 ”与之前的“ 子连续组 ”，那么“ 子候选组 ”与该“ 子连续组 ”连续
 		  bool bConsistent = false;
-		  // set<KeyFrame*>::iterator
+		  // std::set<KeyFrame*>::iterator
 	 // 步骤5.4：	遍历  每个 子候选组, 检测候选组中每一个关键帧在“子连续组”中是否存在
 		  for(auto sit=spCandidateGroup.begin(), send=spCandidateGroup.end(); sit != send; sit++)
 		  {
@@ -223,7 +223,7 @@ namespace ORB_SLAM2
 		      int nCurrentConsistency = nPreviousConsistency + 1;//当前子 连续组 序号
 		      if(!vbConsistentGroup[iG])// 子连续组 未连续
 		      {
-			  ConsistentGroup cg = make_pair(spCandidateGroup,nCurrentConsistency);//子候选帧 对应 连续组序号
+			  ConsistentGroup cg = std::make_pair(spCandidateGroup,nCurrentConsistency);//子候选帧 对应 连续组序号
 			  vCurrentConsistentGroups.push_back(cg);
 			  vbConsistentGroup[iG]=true; // 设置连续组 连续标志
 			  //this avoid to include the same group more than once
@@ -248,7 +248,7 @@ namespace ORB_SLAM2
           // 计数器设为0，重新开始
 	      if(!bConsistentForSomeGroup)
 	      {
-		  ConsistentGroup cg = make_pair(spCandidateGroup,0);
+		  ConsistentGroup cg = std::make_pair(spCandidateGroup,0);
 		  vCurrentConsistentGroups.push_back(cg);
 	      }
 	  }
@@ -311,13 +311,13 @@ namespace ORB_SLAM2
 	  // 
 	  ORBmatcher matcher(0.75,true);
 
-	  vector<Sim3Solver*> vpSim3Solvers;//相似变换求解器
+	  std::vector<Sim3Solver*> vpSim3Solvers;//相似变换求解器
 	  vpSim3Solvers.resize(nInitialCandidates);// 每个候选帧都有一个 Sim3Solver
 
-	  vector<vector<MapPoint*> > vvpMapPointMatches;//每个候选闭环关键帧 和 当前帧 都会匹配计算 匹配地图点
+	  std::vector<std::vector<MapPoint*> > vvpMapPointMatches;//每个候选闭环关键帧 和 当前帧 都会匹配计算 匹配地图点
 	  vvpMapPointMatches.resize(nInitialCandidates);
 
-	  vector<bool> vbDiscarded;// 候选闭环关键帧 好坏
+	  std::vector<bool> vbDiscarded;// 候选闭环关键帧 好坏
 	  vbDiscarded.resize(nInitialCandidates);
 
 	  int nCandidates=0; //candidates with enough matches
@@ -327,7 +327,7 @@ namespace ORB_SLAM2
 // 步骤2：从筛选的闭环候选帧中取出一帧关键帧pKF
 	      KeyFrame* pKF = mvpEnoughConsistentCandidates[i];
 
-	      // avoid that local mapping erase it while it is being processed in this thread
+	      // avoid that local mapping erase it while it is being processed in this std::thread
 	   // 防止在LocalMapping中KeyFrameCulling函数将此关键帧作为冗余帧剔除
 	      pKF->SetNotErase();
 
@@ -377,7 +377,7 @@ namespace ORB_SLAM2
 		  KeyFrame* pKF = mvpEnoughConsistentCandidates[i];//候选闭环关键帧pKF
 
 		  // Perform 5 Ransac Iterations
-		  vector<bool> vbInliers;
+		  std::vector<bool> vbInliers;
 		  int nInliers;// 内点数量
 		  bool bNoMore;// 这是局部变量，在pSolver->iterate(...)内进行初始化
 
@@ -398,7 +398,7 @@ namespace ORB_SLAM2
 		 // 得到了相似变换
 		  if(!Scm.empty())
 		  {
-		      vector<MapPoint*> vpMapPointMatches(vvpMapPointMatches[i].size(), static_cast<MapPoint*>(NULL));
+		      std::vector<MapPoint*> vpMapPointMatches(vvpMapPointMatches[i].size(), static_cast<MapPoint*>(NULL));
 		      for(size_t j=0, jend=vbInliers.size(); j<jend; j++)
 		      {
 			// 保存符合sim3变换 的 内点 inlier的地图点MapPoint
@@ -459,15 +459,15 @@ namespace ORB_SLAM2
 	  // 将mpMatchedKF相连的关键帧全部取出来放入vpLoopConnectedKFs
 	  // 将vpLoopConnectedKFs的MapPoints取出来放入mvpLoopMapPoints
 	  // Retrieve MapPoints seen in Loop Keyframe and neighbors
-	  vector<KeyFrame*> vpLoopConnectedKFs = mpMatchedKF->GetVectorCovisibleKeyFrames();// 闭环匹配上 关键帧的相连关键帧
+	  std::vector<KeyFrame*> vpLoopConnectedKFs = mpMatchedKF->GetVectorCovisibleKeyFrames();// 闭环匹配上 关键帧的相连关键帧
 	  vpLoopConnectedKFs.push_back(mpMatchedKF);//连同自己
 	  mvpLoopMapPoints.clear();
-	  // vector<KeyFrame*>::iterator
+	  // std::vector<KeyFrame*>::iterator
 	 // 迭代每一个闭环关键帧及其相邻帧
 	  for(auto  vit=vpLoopConnectedKFs.begin(); vit!=vpLoopConnectedKFs.end(); vit++)
 	  {
 	      KeyFrame* pKF = *vit;//每一个闭环关键帧及其相邻帧
-	      vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();//对应帧的所有地图点
+	      std::vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();//对应帧的所有地图点
 	      for(size_t i=0, iend=vpMapPoints.size(); i<iend; i++)
 	      {
 		  MapPoint* pMP = vpMapPoints[i];//每一个地图点
@@ -554,7 +554,7 @@ namespace ORB_SLAM2
 // 步骤1：停止全局优化  
 	  if(isRunningGBA())
 	  {
-	      unique_lock<mutex> lock(mMutexGBA);
+	      std::unique_lock<std::mutex> lock(mMutexGBA);
 	      // 这个标志位仅用于控制输出提示，可忽略
 	      mbStopGBA = true;//停止全局优化 
 
@@ -592,10 +592,10 @@ namespace ORB_SLAM2
 
 	  {
 	      // Get Map Mutex
-	      unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+	      std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
 	      
     // 步骤4.1：通过位姿传播，得到Sim3调整后其它与当前帧相连关键帧的位姿（只是得到，还没有修正）
-	      // vector<KeyFrame*>::iterator
+	      // std::vector<KeyFrame*>::iterator
 	      //  遍历与当前帧相连的关键帧
 	      for(auto vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
 	      {
@@ -637,7 +637,7 @@ namespace ORB_SLAM2
 		  g2o::Sim3 g2oSiw =NonCorrectedSim3[pKFi];//未优化的位姿
 		  
          // 遍历 帧的 每一个地图点
-		  vector<MapPoint*> vpMPsi = pKFi->GetMapPointMatches();//所有的地图点
+		  std::vector<MapPoint*> vpMPsi = pKFi->GetMapPointMatches();//所有的地图点
 		  for(size_t iMP=0, endMPi = vpMPsi.size(); iMP<endMPi; iMP++)
 		  {
 		      MapPoint* pMPi = vpMPsi[iMP];// 每一个地图点
@@ -714,28 +714,28 @@ namespace ORB_SLAM2
 	  
 // 步骤7：更新当前关键帧之间的共视相连关系，得到因闭环时MapPoints融合而新得到的连接关系
 	  // After the MapPoint fusion, new links in the covisibility graph will appear attaching both sides of the loop
-	  map<KeyFrame*, set<KeyFrame*> > LoopConnections;//新 一级二级相关联关系
-	  // vector<KeyFrame*>::iterator
+	  std::map<KeyFrame*, std::set<KeyFrame*> > LoopConnections;//新 一级二级相关联关系
+	  // std::vector<KeyFrame*>::iterator
    // 步骤7.1：遍历当前帧相连关键帧（一级相连）	  
 	  for(auto vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
 	  {
 	      KeyFrame* pKFi = *vit;
    // 步骤7.2：得到与当前帧相连关键帧的相连关键帧（二级相连） 之前二级相邻关系      
-	      vector<KeyFrame*> vpPreviousNeighbors = pKFi->GetVectorCovisibleKeyFrames();
+	      std::vector<KeyFrame*> vpPreviousNeighbors = pKFi->GetVectorCovisibleKeyFrames();
 
 	      // Update connections. Detect new links.
    // 步骤7.3：更新一级相连关键帧的连接关系	      
 	      pKFi->UpdateConnections();
    // 步骤7.4：取出该帧更新后的连接关系	 新二级相邻关系     
 	      LoopConnections[pKFi] = pKFi->GetConnectedKeyFrames();
-	      // vector<KeyFrame*>::iterator
+	      // std::vector<KeyFrame*>::iterator
    // 步骤7.5：从新连接关系中 去除闭环之前的二级连接关系，剩下的连接就是由闭环得到的连接关系      
 	      for(auto vit_prev=vpPreviousNeighbors.begin(), vend_prev=vpPreviousNeighbors.end(); vit_prev!=vend_prev; vit_prev++)
 	      {
 		  LoopConnections[pKFi].erase(*vit_prev);// 新二级相邻关系 中删除旧 二级相连关系
 	      }
    // 步骤7.6：从连接关系中去除闭环之前的一级连接关系，剩下的连接就是由闭环得到的连接关系
-	      // vector<KeyFrame*>::iterator
+	      // std::vector<KeyFrame*>::iterator
 	      for(auto vit2=mvpCurrentConnectedKFs.begin(), vend2=mvpCurrentConnectedKFs.end(); vit2!=vend2; vit2++)
 	      {
 		  LoopConnections[pKFi].erase(*vit2);
@@ -754,13 +754,13 @@ namespace ORB_SLAM2
 	  mpMatchedKF->AddLoopEdge(mpCurrentKF);
 	  mpCurrentKF->AddLoopEdge(mpMatchedKF);
 
-	  // Launch a new thread to perform Global Bundle Adjustment
+	  // Launch a new std::thread to perform Global Bundle Adjustment
 // 步骤10：新建一个线程用于全局BA优化
        // OptimizeEssentialGraph只是优化了一些主要关键帧的位姿，这里进行全局BA可以全局优化所有位姿和MapPoints  
 	  mbRunningGBA = true;
 	  mbFinishedGBA = false;
 	  mbStopGBA = false;
-	  mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
+	  mpThreadGBA = new std::thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
 
 	  // Loop closed. Release Local Mapping.
 	  mpLocalMapper->Release();    
@@ -783,14 +783,14 @@ namespace ORB_SLAM2
 	      g2o::Sim3 g2oScw = mit->second;//位姿
 	      cv::Mat cvScw = Converter::toCvMat(g2oScw);//opencv格式
               // mvpLoopMapPoints 为闭环时 相邻关键帧上的 多有地图点
-	      vector<MapPoint*> vpReplacePoints(mvpLoopMapPoints.size(),static_cast<MapPoint*>(NULL));
+	      std::vector<MapPoint*> vpReplacePoints(mvpLoopMapPoints.size(),static_cast<MapPoint*>(NULL));
 	      
 	  // 将闭环相连帧的MapPoints坐标变换到pKF帧坐标系，然后投影，检查冲突并融    
 	      matcher.Fuse(pKF,cvScw,mvpLoopMapPoints,4,vpReplacePoints);
 	      //对 相邻帧 匹配的地图点 融合更新  vpReplacePoints 是地图点的融合 
 
 	      // Get Map Mutex
-	      unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+	      std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
 	      const int nLP = mvpLoopMapPoints.size();
 	      for(int i=0; i<nLP;i++)
 	      {
@@ -820,7 +820,7 @@ namespace ORB_SLAM2
 	  // We need to propagate the correction through the spanning tree
 	  // 更新地图点 和 关键帧
 	  {
-	      unique_lock<mutex> lock(mMutexGBA);
+	      std::unique_lock<std::mutex> lock(mMutexGBA);
 	      if(idx!=mnFullBAIdx)
 		  return;
 
@@ -836,19 +836,19 @@ namespace ORB_SLAM2
 		  }
 
 		  // Get Map Mutex
-		  unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+		  std::unique_lock<std::mutex> lock(mpMap->mMutexMapUpdate);
 		  
                
 // 步骤1：更新关键帧  地图中所有的关键帧
 		  // Correct keyframes starting at map first keyframe
-		  list<KeyFrame*> lpKFtoCheck(mpMap->mvpKeyFrameOrigins.begin(),mpMap->mvpKeyFrameOrigins.end());
+		  std::list<KeyFrame*> lpKFtoCheck(mpMap->mvpKeyFrameOrigins.begin(),mpMap->mvpKeyFrameOrigins.end());
 		  while(!lpKFtoCheck.empty())
 		  {
 		      KeyFrame* pKF = lpKFtoCheck.front();// 地图中的 关键帧
-		      const set<KeyFrame*> sChilds = pKF->GetChilds();// 孩子 帧
+		      const std::set<KeyFrame*> sChilds = pKF->GetChilds();// 孩子 帧
 		      cv::Mat Twc = pKF->GetPoseInverse();
 		      // 遍历每一个孩子帧
-		      for(set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
+		      for(std::set<KeyFrame*>::const_iterator sit=sChilds.begin();sit!=sChilds.end();sit++)
 		      {
 			  KeyFrame* pChild = *sit;// 每一个孩子帧
 			  if(pChild->mnBAGlobalForKF != nLoopKF)//跳过 闭环发生事时的当前帧 避免重复
@@ -868,7 +868,7 @@ namespace ORB_SLAM2
 		  
 // 步骤2：更新 地图点 
 		  // Correct MapPoints
-		  const vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
+		  const std::vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
 
 		  for(size_t i=0; i<vpMPs.size(); i++)
 		  {
@@ -925,14 +925,14 @@ namespace ORB_SLAM2
       void LoopClosing::RequestReset()
       {
 	  {
-	      unique_lock<mutex> lock(mMutexReset);
+	      std::unique_lock<std::mutex> lock(mMutexReset);
 	      mbResetRequested = true;
 	  }
 
 	  while(1)
 	  {
 	      {
-	      unique_lock<mutex> lock2(mMutexReset);
+	      std::unique_lock<std::mutex> lock2(mMutexReset);
 	      if(!mbResetRequested)
 		  break;
 	      }
@@ -946,7 +946,7 @@ namespace ORB_SLAM2
  */ 
       void LoopClosing::ResetIfRequested()
       {
-	  unique_lock<mutex> lock(mMutexReset);
+	  std::unique_lock<std::mutex> lock(mMutexReset);
 	  if(mbResetRequested)
 	  {
 	      mlpLoopKeyFrameQueue.clear();
@@ -957,25 +957,25 @@ namespace ORB_SLAM2
 
       void LoopClosing::RequestFinish()
       {
-	  unique_lock<mutex> lock(mMutexFinish);
+	  std::unique_lock<std::mutex> lock(mMutexFinish);
 	  mbFinishRequested = true;
       }
 
       bool LoopClosing::CheckFinish()
       {
-	  unique_lock<mutex> lock(mMutexFinish);
+	  std::unique_lock<std::mutex> lock(mMutexFinish);
 	  return mbFinishRequested;
       }
 
       void LoopClosing::SetFinish()
       {
-	  unique_lock<mutex> lock(mMutexFinish);
+	  std::unique_lock<std::mutex> lock(mMutexFinish);
 	  mbFinished = true;
       }
 
       bool LoopClosing::isFinished()
       {
-	  unique_lock<mutex> lock(mMutexFinish);
+	  std::unique_lock<std::mutex> lock(mMutexFinish);
 	  return mbFinished;
       }
 

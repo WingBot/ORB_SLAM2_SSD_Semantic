@@ -2,7 +2,7 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H
 
-#include "./include/net.h"  // ncnn 头文件
+#include "ncnn/net.h"  // ncnn 头文件
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>// gui 画图等
 #include <opencv2/imgproc/imgproc.hpp>
@@ -12,9 +12,8 @@
 typedef struct Object
 {
     cv::Rect_<float> rect;// 边框
+    float prob;// 置信度
     std::string object_name;// 物体类别名
-    int class_id; // 类别id
-    float prob;   // 置信度
 } Object;
 
 class Detector

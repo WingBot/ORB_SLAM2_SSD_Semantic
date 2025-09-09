@@ -94,7 +94,7 @@ public:
     // Matching to triangulate new MapPoints. Check Epipolar Constraint.
     // 以及利用三角化，在两个关键帧之间恢复出一些地图点
     int SearchForTriangulation(KeyFrame *pKF1, KeyFrame* pKF2, cv::Mat F12,
-                               std::vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo);
+                               std::vector<std::pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo);
 
     // Search matches between MapPoints seen in KF1 and KF2 transforming by a Sim3 [s12*R12|t12]
     // In the stereo and RGB-D case, s12=1
@@ -106,10 +106,10 @@ public:
     // Project MapPoints into KeyFrame and search for duplicated MapPoints.
     // 地图点能匹配上当前关键帧的地图点，也就是地图点重合了，选择观测数多的地图点替换；
     // 地图点能匹配上当前帧的特征点，但是该特征点还没有生成地图点，则生成新的地图点）。
-    int Fuse(KeyFrame* pKF, const vector<MapPoint *> &vpMapPoints, const float th=3.0);
+    int Fuse(KeyFrame* pKF, const std::vector<MapPoint *> &vpMapPoints, const float th=3.0);
     // Project MapPoints into KeyFrame using a given Sim3 and search for duplicated MapPoints.
     // 　重载的函数是为了减小尺度漂移的影响，需要知道当前关键帧的sim3位姿。
-    int Fuse(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, float th, vector<MapPoint *> &vpReplacePoint);
+    int Fuse(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, float th, std::vector<MapPoint *> &vpReplacePoint);
 
 public:
 

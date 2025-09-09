@@ -11,8 +11,8 @@
 #define KEYFRAME_H
 
 #include "MapPoint.h"
-#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
+#include "DBoW2/BowVector.h"
+#include "DBoW2/FeatureVector.h"
 #include "ORBVocabulary.h"
 #include "ORBextractor.h"
 #include "Frame.h"
@@ -117,7 +117,7 @@ public:
     }
 
 
-    // The following variables are accesed from only 1 thread or never change (no mutex needed).
+    // The following variables are accesed from only 1 std::thread or never change (no std::mutex needed).
     // 变量
 public:
 
@@ -199,7 +199,7 @@ public:
     const cv::Mat mK;
 
 
-    // The following variables need to be accessed trough a mutex to be thread safe.
+    // The following variables need to be accessed trough a std::mutex to be std::thread safe.
 protected:
 
     // SE3 Pose and camera center

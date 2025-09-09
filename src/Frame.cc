@@ -118,8 +118,8 @@ namespace ORB_SLAM2
 
 	  // ORB extraction
 	  // 左右相机图像 ORB特征提取   未校正的图像  得到 关键点位置后 直接对 关键点坐标进行校正
-	  thread threadLeft(&Frame::ExtractORB,this,0,imLeft);// 左相机     提取 orb特征点 和描述子  线程 关键点 mvKeys   描述子mDescriptors
-	  thread threadRight(&Frame::ExtractORB,this,1,imRight);// 又相机 提取 orb特征点 和描述子                       mvKeysRight     mDescriptorsRight
+	  std::thread threadLeft(&Frame::ExtractORB,this,0,imLeft);// 左相机     提取 orb特征点 和描述子  线程 关键点 mvKeys   描述子mDescriptors
+	  std::thread threadRight(&Frame::ExtractORB,this,1,imRight);// 又相机 提取 orb特征点 和描述子                       mvKeysRight     mDescriptorsRight
 	  threadLeft.join();//加入到线程
 	  threadRight.join();
       // 向量mvKeys中存放N个提取出的左图关键点，mDescriptor中存放提取出的左图描述子，
@@ -136,8 +136,8 @@ namespace ORB_SLAM2
 	  ComputeStereoMatches();
 
       // 初始化地图点及其外点；
-	  mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));    
-	  mvbOutlier = vector<bool>(N,false);// 对应的地图点是否是外点 地图点按照 [R t]投影到 本帧图上 是否在 图像范围内
+	  mvpMapPoints = std::vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));    
+	  mvbOutlier = std::vector<bool>(N,false);// 对应的地图点是否是外点 地图点按照 [R t]投影到 本帧图上 是否在 图像范围内
 
 
 	  // This is done only for the first Frame (or after a change in the calibration)
@@ -208,8 +208,8 @@ namespace ORB_SLAM2
 	  ComputeStereoFromRGBD(imDepth);
 
 	  // 关键点 转成 的地图点
-	  mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
-	  mvbOutlier = vector<bool>(N,false);
+	  mvpMapPoints = std::vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
+	  mvbOutlier = std::vector<bool>(N,false);
 
 	  // This is done only for the first Frame (or after a change in the calibration)
 	  if(mbInitialComputations)//第一帧 进行计算
@@ -276,12 +276,12 @@ namespace ORB_SLAM2
 	  // Set no stereo information
 	  // 初始化 匹配点 横坐标  和对应特征点的深度  单目一开始算不出来 深度 和 匹配点
 	  // 但是不包含匹配信息
-	  mvuRight = vector<float>(N,-1);//匹配点 横坐标 无 为-1
-	  mvDepth = vector<float>(N,-1);//匹配点深度 无 为-1
+	  mvuRight = std::vector<float>(N,-1);//匹配点 横坐标 无 为-1
+	  mvDepth = std::vector<float>(N,-1);//匹配点深度 无 为-1
 	  
 	  // 地图点
-	  mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
-	  mvbOutlier = vector<bool>(N,false);
+	  mvpMapPoints = std::vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));
+	  mvbOutlier = std::vector<bool>(N,false);
 
 	  // This is done only for the first Frame (or after a change in the calibration)
 	  if(mbInitialComputations)//第一帧 进行计算
@@ -462,24 +462,24 @@ namespace ORB_SLAM2
  * @return         满足条件的特征点的序号
  */
 
-      vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
+      std::vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel) const
       {
-	  vector<size_t> vIndices;
+	  std::vector<size_t> vIndices;
 	  vIndices.reserve(N);
 
-	  const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
+	  const int nMinCellX = std::max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
 	  if(nMinCellX>=FRAME_GRID_COLS)
 	      return vIndices;
 
-	  const int nMaxCellX = min((int)FRAME_GRID_COLS-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
+	  const int nMaxCellX = std::min((int)FRAME_GRID_COLS-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
 	  if(nMaxCellX<0)
 	      return vIndices;
 
-	  const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
+	  const int nMinCellY = std::max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
 	  if(nMinCellY>=FRAME_GRID_ROWS)
 	      return vIndices;
 
-	  const int nMaxCellY = min((int)FRAME_GRID_ROWS-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
+	  const int nMaxCellY = std::min((int)FRAME_GRID_ROWS-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
 	  if(nMaxCellY<0)
 	      return vIndices;
 
@@ -489,7 +489,7 @@ namespace ORB_SLAM2
 	  {
 	      for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
 	      {
-		  const vector<size_t> vCell = mGrid[ix][iy];
+		  const std::vector<size_t> vCell = mGrid[ix][iy];
 		  if(vCell.empty())
 		      continue;
 
@@ -547,7 +547,7 @@ namespace ORB_SLAM2
       {
 	  if(mBowVec.empty())//词典表示向量为空
 	  {
-	      vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);//mat类型转换到 vector类型描述子向量
+	      std::vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);//mat类型转换到 vector类型描述子向量
 	      // Feature vector associate features with nodes in the 4th level (from leaves up)
 	      // We assume the vocabulary tree has 6 levels, change the 4 otherwise
 	      mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);// 计算 描述子向量 用词典线性表示的向量
@@ -608,10 +608,10 @@ namespace ORB_SLAM2
 	      cv::undistortPoints(mat,mat,mK,mDistCoef,cv::Mat(),mK);
 	      mat=mat.reshape(1);
 
-	      mnMinX = min(mat.at<float>(0,0),mat.at<float>(2,0));
-	      mnMaxX = max(mat.at<float>(1,0),mat.at<float>(3,0));
-	      mnMinY = min(mat.at<float>(0,1),mat.at<float>(1,1));
-	      mnMaxY = max(mat.at<float>(2,1),mat.at<float>(3,1));
+	      mnMinX = std::min(mat.at<float>(0,0),mat.at<float>(2,0));
+	      mnMaxX = std::max(mat.at<float>(1,0),mat.at<float>(3,0));
+	      mnMinY = std::min(mat.at<float>(0,1),mat.at<float>(1,1));
+	      mnMaxY = std::max(mat.at<float>(2,1),mat.at<float>(3,1));
 
 	  }
 	  else // 无畸变校正参数  也就是校正后的图像 图像大小不变
@@ -641,8 +641,8 @@ namespace ORB_SLAM2
       */
       void Frame::ComputeStereoMatches()
       {
-	  mvuRight = vector<float>(N,-1.0f);// 左图关键点 对应 右图匹配点
-	  mvDepth = vector<float>(N,-1.0f);// 关键点对于的深度
+	  mvuRight = std::vector<float>(N,-1.0f);// 左图关键点 对应 右图匹配点
+	  mvDepth = std::vector<float>(N,-1.0f);// 关键点对于的深度
 
 	  const int thOrbDist = (ORBmatcher::TH_HIGH+ORBmatcher::TH_LOW)/2;// 匹配距离
 
@@ -654,7 +654,7 @@ namespace ORB_SLAM2
     // 例如左目图像某个特征点的纵坐标为20，那么在右侧图像上搜索时是在纵坐标为18到22这条带上搜索，搜索带宽度为正负2，搜索带的宽度和特征点所在金字塔层数有关
     // 简单来说，如果纵坐标是20，特征点在图像第20行，那么认为18 19 20 21 22行都有这个特征点
     // vRowIndices[18]、vRowIndices[19]、vRowIndices[20]、vRowIndices[21]、vRowIndices[22]都有这个特征点编号
-	  vector<vector<size_t> > vRowIndices(nRows,vector<size_t>());
+	  std::vector<std::vector<size_t> > vRowIndices(nRows,std::vector<size_t>());
 
 	  for(int i=0; i<nRows; i++)
 	      vRowIndices[i].reserve(200);
@@ -686,7 +686,7 @@ namespace ORB_SLAM2
 
 	  // For each left keypoint search a match in the right image
 	  // 在右图限定区域内为 左图 关键点 匹配一个 关键点
-	  vector<pair<int, int> > vDistIdx;
+	  std::vector<std::pair<int, int> > vDistIdx;
 	  vDistIdx.reserve(N);
 	  
 // 步骤2：对左目相机每个特征点，通过描述子在右目带状搜索区域找到匹配点, 再通过SAD做亚像素匹配
@@ -701,7 +701,7 @@ namespace ORB_SLAM2
 	      const float &vL = kpL.pt.y;
 	      const float &uL = kpL.pt.x;
 
-	      const vector<size_t> &vCandidates = vRowIndices[vL];// 关键点匹配 候选区域
+	      const std::vector<size_t> &vCandidates = vRowIndices[vL];// 关键点匹配 候选区域
 
 	      if(vCandidates.empty())
 		  continue;
@@ -765,7 +765,7 @@ namespace ORB_SLAM2
 		  int bestDist = INT_MAX;
 		  int bestincR = 0;
 		  const int L = 5;// 10*10窗口
-		  vector<float> vDists;
+		  std::vector<float> vDists;
 		  vDists.resize(2*L+1);
                  // 滑动窗口的滑动范围为（-L, L）,提前判断滑动窗口滑动过程中是否会越界
 		  const float iniu = scaleduR0+L-w;
@@ -822,14 +822,14 @@ namespace ORB_SLAM2
 		      }
 		      mvDepth[iL]=mbf/disparity; //根据视差得到深度信息    z = bf /d      b 双目相机基线长度  f为焦距  d为视差(同一点在两相机像素平面 水平方向像素单位差值)
 		      mvuRight[iL] = bestuR;
-		      vDistIdx.push_back(pair<int,int>(bestDist,iL));
+		      vDistIdx.push_back(std::pair<int,int>(bestDist,iL));
 		  }
 	      }
 	  }
       // 以上 计算了 所有 关键点的匹配点对(以及最佳匹配距离) 和 对应的深度
 // 步骤3：剔除SAD匹配偏差较大的匹配特征点
     // 前面SAD匹配只判断滑动窗口中是否有局部最小值，这里通过对比剔除SAD匹配偏差比较大的特征点的深度
-	  sort(vDistIdx.begin(),vDistIdx.end());// 所有关键点 匹配距离排序  根据所有匹配对的SAD偏差进行排序, 距离由小到大
+	  std::sort(vDistIdx.begin(),vDistIdx.end());// 所有关键点 匹配距离排序  根据所有匹配对的SAD偏差进行排序, 距离由小到大
 	  const float median = vDistIdx[vDistIdx.size()/2].first;// 距离中值
 	  const float thDist = 1.5f*1.4f*median; // 计算自适应距离, 大于此距离的匹配对将剔除
 
@@ -849,8 +849,8 @@ namespace ORB_SLAM2
       // 匹配点横坐标 有原特征点校正的后横坐标 -  视差；    视差 = bf / 深度
       void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
       {
-	  mvuRight = vector<float>(N,-1);// 初始匹配点
-	  mvDepth = vector<float>(N,-1);// 初始深度
+	  mvuRight = std::vector<float>(N,-1);// 初始匹配点
+	  mvDepth = std::vector<float>(N,-1);// 初始深度
 
 	  for(int i=0; i<N; i++)
 	  {

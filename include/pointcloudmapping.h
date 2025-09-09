@@ -21,7 +21,7 @@
 
 #include <condition_variable>
 
-#include "Thirdparty/ncnn/ncnn_dect.h"// ncnn ssd目标检测
+#include "ncnn_dect.h"// ncnn ssd目标检测
 
 #include <Eigen/Core>
 
@@ -66,32 +66,32 @@ protected:
     void add_cube(void);// 可视化器中加入 3d标识框
 
     PointCloud::Ptr globalMap;        // 点云地图指针   boost::share_ptr
-    std::shared_ptr<thread>  viewerThread; // 点云可视化线程 std::shared_ptr
+    boost::shared_ptr<std::thread>  viewerThread; // 点云可视化线程 boost::shared_ptr
 
     bool    shutDownFlag    =false;   // 关闭标志
-    mutex   shutDownMutex;            // 关闭 线程互斥锁
+    std::mutex   shutDownMutex;            // 关闭 线程互斥锁
  
-    condition_variable  keyFrameUpdated; 
-// 关键帧更新 <condition_variable> 头文件主要包含了与条件变量相关的类和函数。
+    std::condition_variable  keyFrameUpdated; 
+// 关键帧更新 <std::condition_variable> 头文件主要包含了与条件变量相关的类和函数。
 // 全局条件变量. 用于多线程之间的 相互等待！！！！！！！
-    // condition_variable 类 参考 https://msdn.microsoft.com/zh-cn/magazine/hh874752(v=vs.120)
-    mutex               keyFrameUpdateMutex;// 关键帧更新  互斥锁
+    // std::condition_variable 类 参考 https://msdn.microsoft.com/zh-cn/magazine/hh874752(v=vs.120)
+    std::mutex               keyFrameUpdateMutex;// 关键帧更新  互斥锁
 
     // data to generate point clouds
     std::vector<KeyFrame*>       keyframes;  // 关键帧指针 数组
     std::vector<cv::Mat>         colorImgs;  // 灰度图    数组
     std::vector<cv::Mat>         depthImgs;  // 深度图    数组
     std::vector<cv::Mat>         RGBImgs;    // 深度图    数组
-    mutex                   keyframeMutex;   // 关键帧 互斥锁
+    std::mutex                   keyframeMutex;   // 关键帧 互斥锁
     uint16_t                lastKeyframeSize =0;
 
     double resolution = 0.04;      // 默认点云地图精度    用于设置体素格子的边长大小
     pcl::VoxelGrid<PointT>  voxel; // 点对应的 体素格滤波对象
 
-    //shared_ptr<std::vector<cv::Scalar>> colors_ptr;// 不同物体颜色对象   std::shared_ptr
+    //boost::shared_ptr<std::vector<cv::Scalar>> colors_ptr;// 不同物体颜色对象   boost::shared_ptr
     std::vector<cv::Scalar> colors_;   // 每种物体的颜色
     std::vector<float>      obj_size_; // 每种物体的大小
-    std::shared_ptr<Detector> ncnn_detector_ptr; // ncnn ssd目标检测std::shared_ptr
+    boost::shared_ptr<Detector> ncnn_detector_ptr; // ncnn ssd目标检测boost::shared_ptr
     
 
     std::vector<Cluster> clusters;// 语义点云指针数组
@@ -100,11 +100,11 @@ protected:
     pcl::StatisticalOutlierRemoval<PointT> stat; // 统计学滤波，剔除离群点
 
     
-    std::shared_ptr<pcl::visualization::PCLVisualizer> pcl_viewer_prt;
-    std::shared_ptr<pcl::PCDWriter>                    pcd_writer_ptr;
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> pcl_viewer_prt;
+    boost::shared_ptr<pcl::PCDWriter>                    pcd_writer_ptr;
 
 
-    //std::shared_ptr<thread>  showThread; // 点云更新线程 std::shared_ptr
+    //boost::shared_ptr<std::thread>  showThread; // 点云更新线程 boost::shared_ptr
     int map_state_ok;// 地图是否准备好
 };
 

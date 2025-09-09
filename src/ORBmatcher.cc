@@ -27,7 +27,7 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
+#include "DBoW2/FeatureVector.h"
 
 #include<stdint-gcc.h>
 
@@ -60,7 +60,7 @@ namespace ORB_SLAM2
   * @return                成功匹配的数量
   * @see SearchLocalPoints() isInFrustum()
   */
-	int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoints, const float th)
+	int ORBmatcher::SearchByProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th)
 	{
 	    int nmatches=0;
 
@@ -87,7 +87,7 @@ namespace ORB_SLAM2
 		
 	      // 在当前帧中获取候选匹配点
 	// 步骤4： 通过投影点(投影到当前帧,见isInFrustum())以及搜索窗口和预测的尺度进行搜索, 找出附近的兴趣点
-		const vector<size_t> vIndices =
+		const std::vector<size_t> vIndices =
 			F.GetFeaturesInArea(pMP->mTrackProjX,pMP->mTrackProjY,r*F.mvScaleFactors[nPredictedLevel],nPredictedLevel-1,nPredictedLevel);
 
 		if(vIndices.empty())
@@ -103,7 +103,7 @@ namespace ORB_SLAM2
 
 	// 步骤5： 地图点描述子 和 当前帧候选 关键点描述子 匹配
 		// Get best and second matches with near keypoints
-		// vector<size_t>::const_iterator vit
+		// std::vector<size_t>::const_iterator vit
 		for(auto  vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)// 每一个候选匹配点
 		{
 		    const size_t idx = *vit;// 每一个候选匹配点
@@ -214,18 +214,18 @@ namespace ORB_SLAM2
   * @param  vpMapPointMatches  当前帧 F中关键点 匹配到的地图点MapPoints ，NULL表示未匹配
   * @return                   成功匹配的数量
   */
-	int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches)
+	int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, std::vector<MapPoint*> &vpMapPointMatches)
 	{
 	    // 参考关键帧 的地图点
-	    const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
+	    const std::vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
 	    // 当前帧 关键点个数 个 匹配点 (对应原关键帧 中的地图点)
-	    vpMapPointMatches = vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
+	    vpMapPointMatches = std::vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
 	    // 参考关键帧 的地图点 描述子 的特征向量
 	    const DBoW2::FeatureVector &vFeatVecKF = pKF->mFeatVec;
 
 	    int nmatches=0;
 
-	    vector<int> rotHist[HISTO_LENGTH];// 方向向量 直方图
+	    std::vector<int> rotHist[HISTO_LENGTH];// 方向向量 直方图
 	    for(int i=0;i<HISTO_LENGTH;i++)
 		rotHist[i].reserve(500);
 	    const float factor = 1.0f/HISTO_LENGTH;
@@ -244,8 +244,8 @@ namespace ORB_SLAM2
 //步骤1：分别取出属于同一node的ORB特征点(只有属于同一node(单词)，才有可能是匹配点)  
 		if(KFit->first == Fit->first)// 同一个单词下的 描述子
 		{
-		    const vector<unsigned int> vIndicesKF = KFit->second;
-		    const vector<unsigned int> vIndicesF = Fit->second;
+		    const std::vector<unsigned int> vIndicesKF = KFit->second;
+		    const std::vector<unsigned int> vIndicesF = Fit->second;
 		    
 // 步骤2：遍历关键帧KF中属于该node的地图点 其对应一个描述子
 		  for(size_t iKF=0; iKF < vIndicesKF.size(); iKF++)// 每一个参考 关键帧 地图点
@@ -375,7 +375,7 @@ namespace ORB_SLAM2
   * @param  th                  匹配距离 阈值
   * @return                        成功匹配的数量
   */
-	int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapPoint*> &vpPoints, vector<MapPoint*> &vpMatched, int th)
+	int ORBmatcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const std::vector<MapPoint*> &vpPoints, std::vector<MapPoint*> &vpMatched, int th)
 	{
 	    // Get Calibration Parameters for later projection
 	  // 相机内参数
@@ -396,7 +396,7 @@ namespace ORB_SLAM2
 
 	    // Set of MapPoints already found in the KeyFrame
 // 步骤2： 使用set类型，并去除没有匹配的点，用于快速检索某个MapPoint是否有匹配
-	    set<MapPoint*> spAlreadyFound(vpMatched.begin(), vpMatched.end());
+	    std::set<MapPoint*> spAlreadyFound(vpMatched.begin(), vpMatched.end());
 	    spAlreadyFound.erase(static_cast<MapPoint*>(NULL));
 
 	    int nmatches=0;
@@ -454,7 +454,7 @@ namespace ORB_SLAM2
 		// Search in a radius
 		const float radius = th * pKF->mvScaleFactors[nPredictedLevel];
 		// 在图像上确定 候选 关键点	
-		const vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
+		const std::vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
 		if(vIndices.empty())
 		    continue;
 		// Match to the most similar keypoint in the radius
@@ -464,7 +464,7 @@ namespace ORB_SLAM2
 		int bestDist = 256;//距离上限
 		int bestIdx = -1;
 	      // 遍历搜索区域内所有特征点，与该MapPoint的描述子进行匹配
-		// vector<size_t>::const_iterator
+		// std::vector<size_t>::const_iterator
 		for( auto vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
 		{
 		    const size_t idx = *vit;
@@ -520,19 +520,19 @@ namespace ORB_SLAM2
   * @param  windowSize           在帧2 上搜索区域框大小  
   * @return                                   成功匹配的数量
   */
-	int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<int> &vnMatches12, int windowSize)
+	int ORBmatcher::SearchForInitialization(Frame &F1, Frame &F2, std::vector<cv::Point2f> &vbPrevMatched, std::vector<int> &vnMatches12, int windowSize)
 	{
 	    int nmatches=0;
 	// 为帧1初始化 帧中关键点数量 个 匹配点
-	    vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
+	    vnMatches12 = std::vector<int>(F1.mvKeysUn.size(),-1);
 	// 统计匹配点对的 方向差值  同一个匹配 方向相差不大
-	    vector<int> rotHist[HISTO_LENGTH];//  角度直方图  30个  
+	    std::vector<int> rotHist[HISTO_LENGTH];//  角度直方图  30个  
 	    for(int i=0;i<HISTO_LENGTH;i++)
 		rotHist[i].reserve(500);// 直方图 每个 柱可以记录 500个点
 	    const float factor = 1.0f/HISTO_LENGTH;
 
-	    vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);// 帧2 的匹配点对距离
-	    vector<int> vnMatches21(F2.mvKeysUn.size(),-1);// 帧2 的匹配点
+	    std::vector<int> vMatchedDistance(F2.mvKeysUn.size(),INT_MAX);// 帧2 的匹配点对距离
+	    std::vector<int> vnMatches21(F2.mvKeysUn.size(),-1);// 帧2 的匹配点
 // 步骤1：为帧1的 每一个 关键点 在帧2 中 寻找匹配点
 	    for(size_t i1=0, iend1=F1.mvKeysUn.size(); i1<iend1; i1++)
 	    {
@@ -542,7 +542,7 @@ namespace ORB_SLAM2
 		    continue;
 		
 	      //在 2图上 对应 方块区域的 特征点  候选匹配点
-		vector<size_t> vIndices2 = F2.GetFeaturesInArea(vbPrevMatched[i1].x,vbPrevMatched[i1].y, windowSize,level1,level1);
+		std::vector<size_t> vIndices2 = F2.GetFeaturesInArea(vbPrevMatched[i1].x,vbPrevMatched[i1].y, windowSize,level1,level1);
 
 		if(vIndices2.empty())
 		    continue;
@@ -553,7 +553,7 @@ namespace ORB_SLAM2
 		int bestDist = INT_MAX;// 初始最小距离
 		int bestDist2 = INT_MAX;
 		int bestIdx2 = -1;
-	      // vector<size_t>::iterator vit
+	      // std::vector<size_t>::iterator vit
 	      // 对 帧2中可能的特征点进行遍历
 		for(auto vit = vIndices2.begin(); vit!=vIndices2.end(); vit++)// 对应2图中 对应区域的  每一个的关键点
 		{
@@ -662,24 +662,24 @@ namespace ORB_SLAM2
   * @param  vpMatches12        pKF2中与pKF1匹配的MapPoint，null表示没有匹配
   * @return                    成功匹配的数量
   */
-	int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches12)
+	int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint *> &vpMatches12)
 	{
-	    const vector<cv::KeyPoint> &vKeysUn1 = pKF1->mvKeysUn;  // 关键帧1 特征点
+	    const std::vector<cv::KeyPoint> &vKeysUn1 = pKF1->mvKeysUn;  // 关键帧1 特征点
 	    const DBoW2::FeatureVector &vFeatVec1 = pKF1->mFeatVec;// 关键帧1 特征点 词典描述向量
-	    const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();// 关键帧1 特征点 匹配的 地图点
+	    const std::vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();// 关键帧1 特征点 匹配的 地图点
 	    const cv::Mat &Descriptors1 = pKF1->mDescriptors;// 键帧1 特征点的 描述子 矩阵
 
-	    const vector<cv::KeyPoint> &vKeysUn2 = pKF2->mvKeysUn;  // 关键帧2 特征点
+	    const std::vector<cv::KeyPoint> &vKeysUn2 = pKF2->mvKeysUn;  // 关键帧2 特征点
 	    const DBoW2::FeatureVector &vFeatVec2 = pKF2->mFeatVec;// 关键帧2特征点 词典描述向量
-	    const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();// 关键帧2 特征点 匹配的 地图点
+	    const std::vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();// 关键帧2 特征点 匹配的 地图点
 	    const cv::Mat &Descriptors2 = pKF2->mDescriptors;// 键帧2 特征点的 描述子 矩阵
 
 	// 为关键帧1的地图点 初始化 匹配点
-	    vpMatches12 = vector<MapPoint*>(vpMapPoints1.size(),static_cast<MapPoint*>(NULL));
-	    vector<bool> vbMatched2(vpMapPoints2.size(),false);// 关键帧地图点 匹配标记
+	    vpMatches12 = std::vector<MapPoint*>(vpMapPoints1.size(),static_cast<MapPoint*>(NULL));
+	    std::vector<bool> vbMatched2(vpMapPoints2.size(),false);// 关键帧地图点 匹配标记
 
 	// 统计匹配点对的 方向差值  同一个匹配 方向相差不大  
-	    vector<int> rotHist[HISTO_LENGTH];
+	    std::vector<int> rotHist[HISTO_LENGTH];
 	    for(int i=0;i<HISTO_LENGTH;i++)
 		rotHist[i].reserve(500);
 	    const float factor = 1.0f/HISTO_LENGTH;
@@ -825,7 +825,7 @@ namespace ORB_SLAM2
   * @return                            成功匹配的数量
   */
 	int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
-					      vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo)
+					      std::vector<std::pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo)
 	{    
 	    const DBoW2::FeatureVector &vFeatVec1 = pKF1->mFeatVec;// 关键帧pKF1  描述子 的 词典向量表示
 	    const DBoW2::FeatureVector &vFeatVec2 = pKF2->mFeatVec;// 关键帧pKF2  描述子 的 词典向量表示
@@ -846,11 +846,11 @@ namespace ORB_SLAM2
 	    // Compare only ORB that share the same node
 
 	    int nmatches=0;
-	    vector<bool> vbMatched2(pKF2->N,false);// pKF2 关键帧2  地图点是否被 pKF1 地图点匹配标志
-	    vector<int> vMatches12(pKF1->N,-1);// 帧1 pKF1 地图点 在pKF2中的 匹配 地图点
+	    std::vector<bool> vbMatched2(pKF2->N,false);// pKF2 关键帧2  地图点是否被 pKF1 地图点匹配标志
+	    std::vector<int> vMatches12(pKF1->N,-1);// 帧1 pKF1 地图点 在pKF2中的 匹配 地图点
 
 	    // 匹配点 方向差 一致性约束
-	    vector<int> rotHist[HISTO_LENGTH];
+	    std::vector<int> rotHist[HISTO_LENGTH];
 	    for(int i=0;i<HISTO_LENGTH;i++)
 		rotHist[i].reserve(500);
 	    const float factor = 1.0f/HISTO_LENGTH;
@@ -1012,7 +1012,7 @@ namespace ORB_SLAM2
 	    {
 		if(vMatches12[i]<0)// 无匹配点
 		    continue;
-		vMatchedPairs.push_back(make_pair(i,vMatches12[i]));//保留匹配点对关系
+		vMatchedPairs.push_back(std::make_pair(i,vMatches12[i]));//保留匹配点对关系
 	    }
 
 	    return nmatches;
@@ -1028,7 +1028,7 @@ namespace ORB_SLAM2
   * @param  th             搜索半径的因子
   * @return                   重复MapPoints的数量
   */
-	int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const float th)
+	int ORBmatcher::Fuse(KeyFrame *pKF, const std::vector<MapPoint *> &vpMapPoints, const float th)
 	{
 	    // 关键帧 的 旋转矩阵 和 平移矩阵  欧式变换
 	    cv::Mat Rcw = pKF->GetRotation();
@@ -1092,7 +1092,7 @@ namespace ORB_SLAM2
 
 	// 步骤6： 根据尺度确定搜索半径 进而在图像上确定 候选 关键点	
 		const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
-		const vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
+		const std::vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
 		if(vIndices.empty())
 		    continue;
 		
@@ -1101,7 +1101,7 @@ namespace ORB_SLAM2
 		const cv::Mat dMP = pMP->GetDescriptor();// 地图点描述子
 		int bestDist = 256;
 		int bestIdx = -1;
-		// vector<size_t>::const_iterator 
+		// std::vector<size_t>::const_iterator 
 		for(auto vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
 		{
 		    const size_t idx = *vit;
@@ -1195,7 +1195,7 @@ namespace ORB_SLAM2
   *@param    vpReplacePoint
   * @return                   重复MapPoints的数量
   */
-	int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoints, float th, vector<MapPoint *> &vpReplacePoint)
+	int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const std::vector<MapPoint *> &vpPoints, float th, std::vector<MapPoint *> &vpReplacePoint)
 	{
 	    // Get Calibration Parameters for later projection
 	    // 相机内参数
@@ -1214,7 +1214,7 @@ namespace ORB_SLAM2
 
 	    // Set of MapPoints already found in the KeyFrame
 	    // 关键帧已有的 匹配地图点
-	    const set<MapPoint*> spAlreadyFound = pKF->GetMapPoints();
+	    const std::set<MapPoint*> spAlreadyFound = pKF->GetMapPoints();
 	    int nFused=0;// 融合计数
 	    const int nPoints = vpPoints.size();// 需要融合的 地图点 数量
 
@@ -1265,7 +1265,7 @@ namespace ORB_SLAM2
 		int nPredictedLevel = pMP->PredictScale(dist3D,pKF);
 	// 步骤6： 根据尺度确定搜索半径 进而在图像上确定 候选 关键点	
 		const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
-		const vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
+		const std::vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
 		if(vIndices.empty())
 		    continue;
 
@@ -1274,7 +1274,7 @@ namespace ORB_SLAM2
 		const cv::Mat dMP = pMP->GetDescriptor();// 地图点 对应的 描述子
 		int bestDist = INT_MAX;
 		int bestIdx = -1;
-		// vector<size_t>::const_iterator
+		// std::vector<size_t>::const_iterator
 		for(auto vit=vIndices.begin(); vit!=vIndices.end(); vit++)
 		{
 		    const size_t idx = *vit;
@@ -1331,7 +1331,7 @@ namespace ORB_SLAM2
   * @param th       		 搜索半径参数
   * @return                     成功匹配的数量
   */
-	int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &vpMatches12,
+	int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint*> &vpMatches12,
 				    const float &s12, const cv::Mat &R12, const cv::Mat &t12, const float th)
 	{
 	  
@@ -1357,15 +1357,15 @@ namespace ORB_SLAM2
 	    cv::Mat t21 = -sR21*t12;// 帧1->帧2相似变换 平移向量
 	    
             // 帧1地图点数量  关键点数量 
-	    const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
+	    const std::vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
 	    const int N1 = vpMapPoints1.size();
             // 帧2地图点数量 关键点数量
-	    const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
+	    const std::vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
 	    const int N2 = vpMapPoints2.size();
 
 	    // 来源于 两帧 先前 已有的 匹配
-	    vector<bool> vbAlreadyMatched1(N1,false);// 帧1 在帧2中 是否有 匹配
-	    vector<bool> vbAlreadyMatched2(N2,false);// 帧2 在帧1中 是否有 匹配
+	    std::vector<bool> vbAlreadyMatched1(N1,false);// 帧1 在帧2中 是否有 匹配
+	    std::vector<bool> vbAlreadyMatched2(N2,false);// 帧2 在帧1中 是否有 匹配
 	    
 // 步骤2：用vpMatches12更新 已有的匹配 vbAlreadyMatched1和vbAlreadyMatched2------------------------------------
 	    for(int i=0; i<N1; i++)
@@ -1381,8 +1381,8 @@ namespace ORB_SLAM2
 	    }
 	    
 	    // 新寻找的匹配
-	    vector<int> vnMatch1(N1,-1);
-	    vector<int> vnMatch2(N2,-1);
+	    std::vector<int> vnMatch1(N1,-1);
+	    std::vector<int> vnMatch2(N2,-1);
 // 步骤3：通过Sim变换，确定pKF1的地图点在pKF2帧图像中的大致区域，
 	    //         在该区域内通过描述子进行匹配捕获pKF1和pKF2之前漏匹配的特征点，更新vpMatches12
 	    //         （之前使用SearchByBoW进行特征点匹配时会有漏匹配）
@@ -1428,7 +1428,7 @@ namespace ORB_SLAM2
 		const int nPredictedLevel = pMP->PredictScale(dist3D,pKF2);// 尺度 也就是在 金字塔哪一层
 		// Search in a radius
 		const float radius = th*pKF2->mvScaleFactors[nPredictedLevel];// 再根据 尺度确定搜索半径
-		const vector<size_t> vIndices = pKF2->GetFeaturesInArea(u,v,radius);//进而在图像上确定 候选 关键点	
+		const std::vector<size_t> vIndices = pKF2->GetFeaturesInArea(u,v,radius);//进而在图像上确定 候选 关键点	
 		if(vIndices.empty())
 		    continue;
        // 步骤3.5：遍历候选关键点  计算与地图点  描述子匹配 计算距离 保留最近距离的匹配
@@ -1437,7 +1437,7 @@ namespace ORB_SLAM2
 		int bestDist = INT_MAX;
 		int bestIdx = -1;
 		// 遍历搜索 帧2区域内的所有特征点，与帧1地图点pMP进行描述子匹配
-		// vector<size_t>::const_iterator
+		// std::vector<size_t>::const_iterator
 		for(auto  vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
 		{
 		    const size_t idx = *vit;
@@ -1500,7 +1500,7 @@ namespace ORB_SLAM2
 		const int nPredictedLevel = pMP->PredictScale(dist3D,pKF1);// 尺度
 		// Search in a radius of 2.5*sigma(ScaleLevel)
 		const float radius = th*pKF1->mvScaleFactors[nPredictedLevel];// 半径
-		const vector<size_t> vIndices = pKF1->GetFeaturesInArea(u,v,radius);// 在搜索区域的 候选点
+		const std::vector<size_t> vIndices = pKF1->GetFeaturesInArea(u,v,radius);// 在搜索区域的 候选点
 		if(vIndices.empty())
 		    continue;
 		
@@ -1509,7 +1509,7 @@ namespace ORB_SLAM2
 		const cv::Mat dMP = pMP->GetDescriptor();// 帧2 地图点描述子
 		int bestDist = INT_MAX;
 		int bestIdx = -1;
-		// vector<size_t>::const_iterator
+		// std::vector<size_t>::const_iterator
 		// 遍历搜索 帧1区域内的所有特征点，与帧2地图点pMP进行描述子匹配
 		for(auto vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
 		{
@@ -1581,7 +1581,7 @@ namespace ORB_SLAM2
 // 步骤1：变量初始化----------------------------------------------------------
 	    // Rotation Histogram (to check rotation consistency)
 	   // 匹配点 观测方向差 直方图 统计 用来筛选 最好的 匹配
-	    vector<int> rotHist[HISTO_LENGTH];
+	    std::vector<int> rotHist[HISTO_LENGTH];
 	    for(int i=0;i<HISTO_LENGTH;i++)
 		rotHist[i].reserve(500);
 	    const float factor = 1.0f/HISTO_LENGTH;
@@ -1635,7 +1635,7 @@ namespace ORB_SLAM2
 			int nLastOctave = LastFrame.mvKeys[i].octave;//  上一帧  地图点 对应特征点所处的 尺度(金字塔层数)
 			// Search in a window. Size depends on scale
 			float radius = th * CurrentFrame.mvScaleFactors[nLastOctave];//尺度越大，搜索范围越大
-			vector<size_t> vIndices2;// 当前帧 上 投影点附近的 候选点
+			std::vector<size_t> vIndices2;// 当前帧 上 投影点附近的 候选点
 			if(bForward)// 前进,则上一帧兴趣点在所在的尺度nLastOctave <= nCurOctave< 8(更近了 尺度大 层数高也可以看见)
 			    vIndices2 = CurrentFrame.GetFeaturesInArea(u,v, radius, nLastOctave);
 			else if(bBackward)// 后退,则上一帧兴趣点在所在的尺度0<= nCurOctave <= nLastOctave（远了 尺度降低）
@@ -1649,7 +1649,7 @@ namespace ORB_SLAM2
 			const cv::Mat dMP = pMP->GetDescriptor();// 上一帧地图点描述子
 			int bestDist = 256;
 			int bestIdx2 = -1;	
-			// vector<size_t>::const_iterator
+			// std::vector<size_t>::const_iterator
 			for(auto vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
 			{
 			    const size_t i2 = *vit;
@@ -1737,7 +1737,7 @@ namespace ORB_SLAM2
 	//           也就是提取特征的neighbourhood尺寸），抛弃
 	// 3. 通过地图点的距离dist3D，预测特征对应金字塔层nPredictedLevel，并获取搜索window大小（th*scale），在以上约束的范围内，
 	//    搜索得到候选匹配点集合向量vIndices2
-	//     const vector<size_t> vIndices2 = CurrentFrame.GetFeaturesInArea(u, v, radius, nPredictedLevel-1, nPredictedLevel+1);
+	//     const std::vector<size_t> vIndices2 = CurrentFrame.GetFeaturesInArea(u, v, radius, nPredictedLevel-1, nPredictedLevel+1);
 	// 4. 计算地图点的描述子和候选匹配点描述子距离，获得最近距离的最佳匹配，但是也要满足距离<ORBdist。
 	// 5. 最后，还需要通过直方图验证描述子的方向是否匹配
 /**
@@ -1754,7 +1754,7 @@ namespace ORB_SLAM2
  * @return                             成功匹配的数量
  * @see SearchByBoW()
  */		
-	int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<MapPoint*> &sAlreadyFound, const float th , const int ORBdist)
+	int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const std::set<MapPoint*> &sAlreadyFound, const float th , const int ORBdist)
 	{
 	    int nmatches = 0;
 	  //  当前帧旋转平移矩阵向量 相机坐标点
@@ -1765,13 +1765,13 @@ namespace ORB_SLAM2
 	    // Rotation Histogram (to check rotation consistency)
 	    // 匹配点对观测方向一致性检测
 	    // 匹配点对观测方向差值 方向直方图
-	    vector<int> rotHist[HISTO_LENGTH];
+	    std::vector<int> rotHist[HISTO_LENGTH];
 	    for(int i=0;i<HISTO_LENGTH;i++)
 		rotHist[i].reserve(500);
 	    const float factor = 1.0f/HISTO_LENGTH;
 	    
 // 步骤1：获取关键帧pKF对应的地图点vpMPs，遍历
-	    const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();// 所有关键帧中的地图点
+	    const std::vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();// 所有关键帧中的地图点
 	    for(size_t i=0, iend=vpMPs.size(); i<iend; i++)// 获取关键帧 对应的地图点vpMPs，遍历
 	    {
 		MapPoint* pMP = vpMPs[i];//关键帧中的地图点
@@ -1819,7 +1819,7 @@ namespace ORB_SLAM2
 			const float radius = th*CurrentFrame.mvScaleFactors[nPredictedLevel];
 			//  在以上约束的范围内，搜索得到候选匹配点集合向量vIndices2
 			// 对于 特征点格子内 图像金字塔的 相应层上 的候选特征点
-			const vector<size_t> vIndices2 = CurrentFrame.GetFeaturesInArea(u, v, radius, nPredictedLevel-1, nPredictedLevel+1);
+			const std::vector<size_t> vIndices2 = CurrentFrame.GetFeaturesInArea(u, v, radius, nPredictedLevel-1, nPredictedLevel+1);
 			if(vIndices2.empty())
 			    continue;
 
@@ -1827,7 +1827,7 @@ namespace ORB_SLAM2
 			int bestDist = 256;
 			int bestIdx2 = -1;
 // 步骤4：计算地图点的描述子和候选匹配点描述子距离，获得最近距离的最佳匹配，但是也要满足距离<ORBdist。		
-			// vector<size_t>::const_iterator
+			// std::vector<size_t>::const_iterator
 			for(auto vit=vIndices2.begin(); vit!=vIndices2.end(); vit++)//每一个候选匹配点
 			{
 			    const size_t i2 = *vit;
@@ -1909,7 +1909,7 @@ namespace ORB_SLAM2
  * @param  ind2   数量次高的一个bin
  * @param  ind3   数量第三高的一个bin
  */		
-	void ORBmatcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, int &ind2, int &ind3)
+	void ORBmatcher::ComputeThreeMaxima(std::vector<int>* histo, const int L, int &ind1, int &ind2, int &ind3)
 	{
 	    int max1=0;
 	    int max2=0;

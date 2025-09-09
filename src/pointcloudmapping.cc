@@ -10,7 +10,7 @@
 #include <pcl/io/pcd_io.h>
 #include "Converter.h"
 
-#include <boost/make_shared.hpp>
+#include <memory>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
@@ -40,13 +40,13 @@ PointCloudMapping::PointCloudMapping(double resolution_)
     voxel.setLeafSize( resolution, resolution, resolution);
     globalMap = boost::make_shared< PointCloud >(); // 全局点云地图 共享指针
 
-    viewerThread = make_shared<thread>( bind(&PointCloudMapping::viewer, this ) );// 可视化线程 共享指针 绑定viewer()函数 
+    viewerThread = boost::make_shared<std::thread>( std::bind(&PointCloudMapping::viewer, this ) );// 可视化线程 共享指针 绑定viewer()函数 
     //map_state = 0;
-    //showThread   = make_shared<thread>( bind(&PointCloudMapping::update, this ) );//  点晕更新显示 绑定update()函数 
+    //showThread   = boost::make_shared<std::thread>( std::bind(&PointCloudMapping::update, this ) );//  点晕更新显示 绑定update()函数 
     
 // 不同颜色对应不同物体 
     // std::vector<cv::Scalar> colors;
-    // colors_ptr = std::make_shared< std::vector<cv::Scalar> >();
+    // colors_ptr = boost::make_shared< std::vector<cv::Scalar> >();
     for (int i = 0; i < 21; i++) // 带有背景
     { // voc数据集 20类物体=======
         //colors_ptr->push_back(cv::Scalar( i*10 + 40, i*10 + 40, i*10 + 40));
@@ -69,7 +69,7 @@ PointCloudMapping::PointCloudMapping(double resolution_)
     obj_size_[15] = 0.35;  // 人   
     obj_size_[20] = 0.25;  // 显示器  
 
-    ncnn_detector_ptr = std::make_shared<Detector>();
+    ncnn_detector_ptr = boost::make_shared<Detector>();
 
 // 统计学滤波器
    stat.setMeanK (50);	     	    // 设置在进行统计时考虑查询点临近点数  在类初始化执行
@@ -79,7 +79,7 @@ PointCloudMapping::PointCloudMapping(double resolution_)
 // 体素格滤波器  是那个面已经有了
  
 // 点晕可视化器 ====
-   pcl_viewer_prt = std::make_shared<pcl::visualization::PCLVisualizer>();
+   pcl_viewer_prt = boost::make_shared<pcl::visualization::PCLVisualizer>();
    pcl_viewer_prt->setBackgroundColor(0.0, 0.0, 0.0);// 背景为黑色
    pcl_viewer_prt->setCameraPosition(
         0, 0, 0,                                // camera位置  视角
@@ -95,7 +95,7 @@ PointCloudMapping::PointCloudMapping(double resolution_)
     //pcl::PCDWriter pcdwriter;
 
 // 点云保存器 ====
-   pcd_writer_ptr = std::make_shared<pcl::PCDWriter>();
+   pcd_writer_ptr = boost::make_shared<pcl::PCDWriter>();
    
    map_state_ok = 0; // 
 }
@@ -104,7 +104,7 @@ PointCloudMapping::PointCloudMapping(double resolution_)
 void PointCloudMapping::shutdown()
 {
     {
-        unique_lock<mutex> lck(shutDownMutex);// 执行关闭线程
+        std::unique_lock<std::mutex> lck(shutDownMutex);// 执行关闭线程
         shutDownFlag = true;
         keyFrameUpdated.notify_one();// 将等待 keyFrameUpdated 条件变量对象的其中一个线程解除阻塞
     }
@@ -116,7 +116,7 @@ void PointCloudMapping::shutdown()
 void PointCloudMapping::insertKeyFrame(KeyFrame* kf, cv::Mat& color, cv::Mat& depth, cv::Mat& imgRGB)
 {
     cout<<"receive a keyframe, id = "<<kf->mnId<<endl;
-    unique_lock<mutex> lck(keyframeMutex); // 对关键帧上锁
+    std::unique_lock<std::mutex> lck(keyframeMutex); // 对关键帧上锁
     keyframes.push_back( kf );             // 关键帧数组 加入一个关键帧
     colorImgs.push_back( color.clone() );  // 图像数组  加入一个 图像  深拷贝
     depthImgs.push_back( depth.clone() );  // 深度数据数组 加入   深拷贝
@@ -341,7 +341,7 @@ void PointCloudMapping::add_cube(void)
                         maxPt[0], maxPt[1], maxPt[2], minPt[0], minPt[1], minPt[2]);
                // 打印名字、置信度、中心点坐标
 	const Eigen::Quaternionf quat(Eigen::Quaternionf::Identity());// 姿态 四元素
-	std::string name_new = name + boost::chrono::to_string(i);    // 包围框的名字
+	std::string name_new = name + std::to_string(i);    // 包围框的名字
 	pcl_viewer_prt->addCube(boxCe, quat, 
                                 boxSi[0], boxSi[1], boxSi[2], name_new.c_str()); // 添加盒子
 	pcl_viewer_prt->setShapeRenderingProperties(
@@ -368,7 +368,7 @@ void PointCloudMapping::viewer()
     while(1)
     {
         {
-            unique_lock<mutex> lck_shutdown( shutDownMutex ); // 关闭锁 
+            std::unique_lock<std::mutex> lck_shutdown( shutDownMutex ); // 关闭锁 
             if (shutDownFlag)
             {
                 break;
@@ -383,7 +383,7 @@ void PointCloudMapping::viewer()
             }
             count++;
 
-            unique_lock<mutex> lck_keyframeUpdated( keyFrameUpdateMutex ); // 关键帧更新锁
+            std::unique_lock<std::mutex> lck_keyframeUpdated( keyFrameUpdateMutex ); // 关键帧更新锁
             keyFrameUpdated.wait( lck_keyframeUpdated );// 阻塞 关键帧更新锁
             // 需要等待 insertKeyFrame() 函数中完成 添加 关键帧 后，执行后面的!!!!!!!!!
         }
@@ -391,7 +391,7 @@ void PointCloudMapping::viewer()
         // keyframe is updated
         size_t N=0;
         {
-            unique_lock<mutex> lck( keyframeMutex );// 关键帧锁
+            std::unique_lock<std::mutex> lck( keyframeMutex );// 关键帧锁
             N = keyframes.size();                   // 当前 保存的 关键帧数量
             std::cout << "KeyframeSize: " << N << std::endl;
         }
@@ -418,16 +418,16 @@ void PointCloudMapping::viewer()
               if(obj.prob >0.54)// 预测准确度在 0.55以上 才认为是正确的
                {
                 //const Object& obj = objects[t];
-	        //cv::rectangle(colorImgs[i], obj.rect, colors_[obj.class_id], -1, 4);
+	        //cv::rectangle(colorImgs[i], obj.rect, colors_[0], -1, 4);
                 //cv::imwrite("result.jpg", colorImgs[i]);
-                //cv::rectangle(RGBImgs[i], obj.rect, colors_[obj.class_id], -1, 4);// 为目标物体框内的区域然上颜色
+                //cv::rectangle(RGBImgs[i], obj.rect, colors_[0], -1, 4);// 为目标物体框内的区域然上颜色
                 pcl::PointIndices indices;
                 // 根据深度阈值，为 roi 区域上色
-                draw_rect_with_depth_threshold(RGBImgs[i], depthImgs[i], obj.rect, colors_[obj.class_id], indices);
+                draw_rect_with_depth_threshold(RGBImgs[i], depthImgs[i], obj.rect, colors_[0], indices);
                 vec_indices.push_back(indices);           // 点云团索引
                 clusters_name.push_back(obj.object_name); // 名字
                 clusters_prob.push_back(obj.prob);        // 置信度
-                clusters_class_id.push_back(obj.class_id);// 类别id  
+                clusters_class_id.push_back(0);// 类别id  
                }
             }
             
